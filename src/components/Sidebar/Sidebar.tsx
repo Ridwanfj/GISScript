@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import LayerControl from '@/components/Map/LayerControl'
 import Legend from '@/components/Sidebar/Legend'
 
@@ -35,21 +36,14 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               {/* Map icon */}
-              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-400 shadow-lg shadow-blue-500/25">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-5 h-5 text-white"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" />
-                  <line x1="8" y1="2" x2="8" y2="18" />
-                  <line x1="16" y1="6" x2="16" y2="22" />
-                </svg>
+              <div className="flex items-center justify-center w-10 h-10 shrink-0">
+                <Image
+                  src="/logo.png"
+                  alt="Logo Kota Tegal"
+                  width={40}
+                  height={40}
+                  className="object-contain drop-shadow-md"
+                />
               </div>
               <div>
                 <h1 className="text-base font-bold text-white tracking-tight">

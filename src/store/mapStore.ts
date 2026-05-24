@@ -8,34 +8,63 @@ interface SelectedFeature {
 }
 
 interface MapStore {
+  // Layers yang sedang aktif (visible)
   visibleLayers: Set<LayerKey>
   toggleLayer: (key: LayerKey) => void
+
+  // Layers yang sedang loading data dari API
+  loadingLayers: Set<LayerKey>
+  setLoading: (key: LayerKey, loading: boolean) => void
+
+  // Layers yang datanya sudah di-fetch dan ditambahkan ke map
+  loadedLayers: Set<LayerKey>
+  setLoaded: (key: LayerKey) => void
+
+  // Feature yang dipilih (untuk popup)
   selectedFeature: SelectedFeature | null
   setSelectedFeature: (f: SelectedFeature | null) => void
+
+  // Map ready state
   mapLoaded: boolean
   setMapLoaded: (v: boolean) => void
+
   // Dynamic color maps generated at runtime (layerKey -> { propertyValue -> color })
   layerColors: Record<string, Record<string, string>>
   setLayerColors: (layerKey: string, colors: Record<string, string>) => void
 }
 
 export const useMapStore = create<MapStore>((set) => ({
-  visibleLayers: new Set<LayerKey>([
-    'garis_kota',
-    'kecamatan',
-    'pola_rdtr',
-    'koordinat_menengah_dan_besar',
-  ]),
+  // Awalnya SEMUA layer OFF — user harus mengaktifkan manual
+  visibleLayers: new Set<LayerKey>(),
   toggleLayer: (key) =>
     set((s) => {
       const next = new Set(s.visibleLayers)
       next.has(key) ? next.delete(key) : next.add(key)
       return { visibleLayers: next }
     }),
+
+  loadingLayers: new Set<LayerKey>(),
+  setLoading: (key, loading) =>
+    set((s) => {
+      const next = new Set(s.loadingLayers)
+      loading ? next.add(key) : next.delete(key)
+      return { loadingLayers: next }
+    }),
+
+  loadedLayers: new Set<LayerKey>(),
+  setLoaded: (key) =>
+    set((s) => {
+      const next = new Set(s.loadedLayers)
+      next.add(key)
+      return { loadedLayers: next }
+    }),
+
   selectedFeature: null,
   setSelectedFeature: (f) => set({ selectedFeature: f }),
+
   mapLoaded: false,
   setMapLoaded: (v) => set({ mapLoaded: v }),
+
   layerColors: {},
   setLayerColors: (layerKey, colors) =>
     set((s) => ({
