@@ -31,6 +31,15 @@ interface MapStore {
   // Dynamic color maps generated at runtime (layerKey -> { propertyValue -> color })
   layerColors: Record<string, Record<string, string>>
   setLayerColors: (layerKey: string, colors: Record<string, string>) => void
+
+  // Grouping information (layerKey -> { groupName -> itemNames[] })
+  layerGroups: Record<string, Record<string, string[]>>
+  setLayerGroups: (layerKey: string, groups: Record<string, string[]>) => void
+
+  // Set of disabled sub-layer filters, formatted as "layerKey:value"
+  disabledSubFilters: Set<string>
+  toggleSubFilter: (layerKey: string, value: string) => void
+  toggleSubFiltersBulk: (layerKey: string, values: string[], enable: boolean) => void
 }
 
 export const useMapStore = create<MapStore>((set) => ({
@@ -38,9 +47,25 @@ export const useMapStore = create<MapStore>((set) => ({
   visibleLayers: new Set<LayerKey>(),
   toggleLayer: (key) =>
     set((s) => {
-      const next = new Set(s.visibleLayers)
-      next.has(key) ? next.delete(key) : next.add(key)
-      return { visibleLayers: next }
+      const nextLayers = new Set(s.visibleLayers)
+      const nextSubFilters = new Set(s.disabledSubFilters)
+      
+      if (nextLayers.has(key)) {
+        nextLayers.delete(key)
+      } else {
+        nextLayers.add(key)
+        // Reset sub-filters for this layer when enabling it again
+        const prefix = `${key}:`
+        for (const filter of nextSubFilters) {
+          if (filter.startsWith(prefix)) {
+            nextSubFilters.delete(filter)
+          }
+        }
+      }
+      return { 
+        visibleLayers: nextLayers,
+        disabledSubFilters: nextSubFilters
+      }
     }),
 
   loadingLayers: new Set<LayerKey>(),
@@ -70,4 +95,37 @@ export const useMapStore = create<MapStore>((set) => ({
     set((s) => ({
       layerColors: { ...s.layerColors, [layerKey]: colors },
     })),
+
+  layerGroups: {},
+  setLayerGroups: (layerKey, groups) =>
+    set((s) => ({
+      layerGroups: { ...s.layerGroups, [layerKey]: groups },
+    })),
+
+  disabledSubFilters: new Set<string>(),
+  toggleSubFilter: (layerKey, value) =>
+    set((s) => {
+      const next = new Set(s.disabledSubFilters)
+      const compoundKey = `${layerKey}:${value}`
+      if (next.has(compoundKey)) {
+        next.delete(compoundKey)
+      } else {
+        next.add(compoundKey)
+      }
+      return { disabledSubFilters: next }
+    }),
+
+  toggleSubFiltersBulk: (layerKey, values, enable) =>
+    set((s) => {
+      const next = new Set(s.disabledSubFilters)
+      for (const val of values) {
+        const compoundKey = `${layerKey}:${val}`
+        if (enable) {
+          next.delete(compoundKey)
+        } else {
+          next.add(compoundKey)
+        }
+      }
+      return { disabledSubFilters: next }
+    }),
 }))

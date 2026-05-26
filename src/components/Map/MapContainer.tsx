@@ -20,7 +20,7 @@ function getLayerIds(key: LayerKey): string[] {
 export default function MapContainer() {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
-  const { setMapLoaded, setSelectedFeature, visibleLayers } = useMapStore()
+  const { setMapLoaded, setSelectedFeature, visibleLayers, disabledSubFilters } = useMapStore()
 
   const handleFeatureClick = useCallback(
     (layerKey: LayerKey, e: maplibregl.MapMouseEvent & { features?: maplibregl.MapGeoJSONFeature[] }) => {
@@ -198,6 +198,30 @@ export default function MapContainer() {
             colorMap = Object.fromEntries(
               uniqueValues.map((v, i) => [v, palette[i % palette.length]])
             )
+
+            // Extract groupings for kelurahan by WADMKC (kecamatan)
+            if (key === 'kelurahan') {
+              const groups: Record<string, string[]> = {}
+              for (const f of features) {
+                const kelName = f.properties?.NAMOBJ
+                const kecName = f.properties?.WADMKC
+                if (kelName && kecName) {
+                  const kelStr = String(kelName)
+                  const kecStr = String(kecName)
+                  if (!groups[kecStr]) {
+                    groups[kecStr] = []
+                  }
+                  if (!groups[kecStr].includes(kelStr)) {
+                    groups[kecStr].push(kelStr)
+                  }
+                }
+              }
+              // Sort item lists
+              for (const kec in groups) {
+                groups[kec].sort()
+              }
+              useMapStore.getState().setLayerGroups(key, groups)
+            }
           }
 
           useMapStore.getState().setLayerColors(key, colorMap)
@@ -346,6 +370,45 @@ export default function MapContainer() {
       }
     }
   }, [visibleLayers, fetchAndAddLayer])
+
+  // React ke perubahan disabledSubFilters — update filter pada layer di map
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+
+    const allKeys = Object.keys(LAYER_CONFIG) as LayerKey[]
+    for (const key of allKeys) {
+      const config = LAYER_CONFIG[key]
+      if (!('colorByProperty' in config) || !config.colorByProperty) continue
+
+      const prop = config.colorByProperty as string
+      const ids = getLayerIds(key)
+
+      const disabledValues: string[] = []
+      const prefix = `${key}:`
+      for (const val of disabledSubFilters) {
+        if (val.startsWith(prefix)) {
+          disabledValues.push(val.slice(prefix.length))
+        }
+      }
+
+      let filterExpression: any = null
+      if (disabledValues.length > 0) {
+        filterExpression = [
+          'match',
+          ['get', prop],
+          ...disabledValues.flatMap((val) => [val, false]),
+          true,
+        ]
+      }
+
+      for (const id of ids) {
+        if (map.getLayer(id)) {
+          map.setFilter(id, filterExpression)
+        }
+      }
+    }
+  }, [disabledSubFilters])
 
   return (
     <div ref={containerRef} className="w-full h-full" />
