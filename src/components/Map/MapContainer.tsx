@@ -193,6 +193,18 @@ export default function MapContainer() {
           }
         }
 
+        const kecProjectCounts: Record<string, number> = {}
+        for (const [name, val] of Object.entries(kecAgg)) {
+          kecProjectCounts[name.toUpperCase()] = val.count
+        }
+        useMapStore.getState().setLayerCounts('kecamatan_projects', kecProjectCounts)
+
+        const kelProjectCounts: Record<string, number> = {}
+        for (const [name, val] of Object.entries(kelAgg)) {
+          kelProjectCounts[name] = val.count
+        }
+        useMapStore.getState().setLayerCounts('kelurahan_projects', kelProjectCounts)
+
         // Build GeoJSON features for aggregates
         const kecFeatures = Object.entries(kecAgg).map(([name, val]) => ({
           type: 'Feature' as const,
@@ -733,6 +745,18 @@ export default function MapContainer() {
                 }
               }
             }
+
+            const kecProjectCounts: Record<string, number> = {}
+            for (const [name, val] of Object.entries(kecAgg)) {
+              kecProjectCounts[name.toUpperCase()] = val.count
+            }
+            useMapStore.getState().setLayerCounts('kecamatan_projects', kecProjectCounts)
+
+            const kelProjectCounts: Record<string, number> = {}
+            for (const [name, val] of Object.entries(kelAgg)) {
+              kelProjectCounts[name] = val.count
+            }
+            useMapStore.getState().setLayerCounts('kelurahan_projects', kelProjectCounts)
 
             const kecFeatures = Object.entries(kecAgg).map(([name, val]) => ({
               type: 'Feature' as const,

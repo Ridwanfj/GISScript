@@ -10,6 +10,14 @@ const layerIcons: Record<string, string> = {
   circle: '●',
 }
 
+function toTitleCase(str: string): string {
+  return str
+    .toLowerCase()
+    .split(' ')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+}
+
 const layerOrder: LayerKey[] = [
   'garis_kota',
   'kecamatan',
@@ -115,6 +123,7 @@ function LegendSection({
   disabledSubFilters,
   toggleSubFilter,
   defaultExpanded = false,
+  showBulkCheckbox = true,
 }: {
   title: string
   items: { name: string; color: string; label?: string; count?: number }[]
@@ -122,6 +131,7 @@ function LegendSection({
   disabledSubFilters?: Set<string>
   toggleSubFilter?: (layerKey: string, value: string) => void
   defaultExpanded?: boolean
+  showBulkCheckbox?: boolean
 }) {
   const [expanded, setExpanded] = useState(defaultExpanded)
   const toggleSubFiltersBulk = useMapStore((s) => s.toggleSubFiltersBulk)
@@ -139,7 +149,7 @@ function LegendSection({
     <div className="w-full">
       <div className="flex items-center gap-1 w-full hover:bg-white/5 rounded-lg px-1 transition-colors">
         {/* Bulk Toggle Checkbox */}
-        {layerKey && disabledSubFilters && toggleSubFiltersBulk && (
+        {showBulkCheckbox && layerKey && disabledSubFilters && toggleSubFiltersBulk && (
           <button
             onClick={(e) => {
               e.stopPropagation()
@@ -166,7 +176,7 @@ function LegendSection({
         {/* Toggle Expand Button (chevron + title) */}
         <button
           onClick={() => setExpanded(!expanded)}
-          className="flex-1 flex items-center gap-1.5 py-1.5 text-left text-[11px] font-semibold text-gray-300 hover:text-white transition-colors cursor-pointer"
+          className="flex-1 flex items-center gap-1.5 py-1.5 text-left text-[11px] font-semibold text-white hover:text-white/80 transition-colors cursor-pointer"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -219,8 +229,8 @@ function LegendSection({
                 />
 
                 {/* Name */}
-                <span className={`text-[11px] leading-snug flex-1 whitespace-normal break-words transition-colors duration-200 ${isSubActive ? 'text-white' : 'text-gray-500 line-through'}`}>
-                  {label || name}
+                <span className={`text-[11px] font-semibold leading-snug flex-1 whitespace-normal break-words transition-colors duration-200 ${isSubActive ? 'text-white' : 'text-gray-500 line-through'}`}>
+                  {toTitleCase(label || name)}
                 </span>
 
                 {/* Count badge on the right */}
@@ -277,10 +287,15 @@ function LayerDetail({
   if (keyName === 'kecamatan') {
     const colors = layerColors['kecamatan']
     if (!colors) return null
-    const items = Object.entries(colors).map(([name, color]) => ({
-      name,
-      color,
-    }))
+    const projectCounts = layerCounts['kecamatan_projects'] || {}
+    const items = Object.entries(colors).map(([name, color]) => {
+      const count = projectCounts[name.toUpperCase()] || 0
+      return {
+        name,
+        color,
+        count: count,
+      }
+    })
     return (
       <div className="ml-2 mt-2 pl-2 border-l border-gray-800/50">
         <LegendSection
@@ -290,6 +305,7 @@ function LayerDetail({
           disabledSubFilters={disabledSubFilters}
           toggleSubFilter={toggleSubFilter}
           defaultExpanded={true}
+          showBulkCheckbox={false}
         />
       </div>
     )
@@ -308,7 +324,7 @@ function LayerDetail({
         {/* Collapsible Header */}
         <button
           onClick={() => setExpanded(!expanded)}
-          className="w-full flex items-center gap-1.5 px-2 py-1.5 text-left text-[11px] font-semibold text-gray-400 hover:text-white transition-colors cursor-pointer"
+          className="w-full flex items-center gap-1.5 px-2 py-1.5 text-left text-[11px] font-semibold text-white hover:text-white/80 transition-colors cursor-pointer"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -334,10 +350,15 @@ function LayerDetail({
           <div className="space-y-1.5 max-h-64 overflow-y-auto scrollbar-thin mt-1">
             {groups && Object.keys(groups).length > 0 ? (
               Object.entries(groups).map(([kecName, kelList]) => {
-                const items = kelList.map(kelName => ({
-                  name: kelName,
-                  color: colors[kelName] || '#94a3b8'
-                }))
+                const projectCounts = layerCounts['kelurahan_projects'] || {}
+                const items = kelList.map(kelName => {
+                  const count = projectCounts[kelName] || 0
+                  return {
+                    name: kelName,
+                    color: colors[kelName] || '#94a3b8',
+                    count: count,
+                  }
+                })
                 return (
                   <LegendSection
                     key={kecName}
@@ -353,6 +374,8 @@ function LayerDetail({
               <div className="pl-2 space-y-1">
                 {Object.entries(colors).map(([name, color]) => {
                   const isSubActive = !disabledSubFilters.has('kelurahan:' + name)
+                  const projectCounts = layerCounts['kelurahan_projects'] || {}
+                  const count = projectCounts[name] || 0
                   return (
                     <button
                       key={name}
@@ -378,9 +401,16 @@ function LayerDetail({
                       />
 
                       {/* Name */}
-                      <span className={`text-[11px] leading-snug flex-1 whitespace-normal break-words transition-colors duration-200 ${isSubActive ? 'text-white' : 'text-gray-500 line-through'}`}>
-                        {name}
+                      <span className={`text-[11px] font-semibold leading-snug flex-1 whitespace-normal break-words transition-colors duration-200 ${isSubActive ? 'text-white' : 'text-gray-500 line-through'}`}>
+                        {toTitleCase(name)}
                       </span>
+
+                      {/* Count badge on the right */}
+                      {count > 0 && (
+                        <span className={`text-[10px] font-semibold shrink-0 ml-auto mr-1 select-none transition-colors duration-200 mt-0.5 ${isSubActive ? 'text-white' : 'text-gray-600 line-through'}`}>
+                          ({count})
+                        </span>
+                      )}
                     </button>
                   )
                 })}
@@ -401,7 +431,7 @@ function LayerDetail({
         {/* Collapsible Header */}
         <button
           onClick={() => setExpanded(!expanded)}
-          className="w-full flex items-center gap-1.5 px-2 py-1.5 text-left text-[11px] font-semibold text-gray-400 hover:text-white transition-colors cursor-pointer"
+          className="w-full flex items-center gap-1.5 px-2 py-1.5 text-left text-[11px] font-semibold text-white hover:text-white/80 transition-colors cursor-pointer"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -472,6 +502,7 @@ function LayerDetail({
           disabledSubFilters={disabledSubFilters}
           toggleSubFilter={toggleSubFilter}
           defaultExpanded={true}
+          showBulkCheckbox={false}
         />
       </div>
     )
