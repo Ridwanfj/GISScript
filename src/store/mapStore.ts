@@ -36,6 +36,10 @@ interface MapStore {
   layerGroups: Record<string, Record<string, string[]>>
   setLayerGroups: (layerKey: string, groups: Record<string, string[]>) => void
 
+  // Dynamic feature count maps generated at runtime (layerKey -> { propertyValue -> count })
+  layerCounts: Record<string, Record<string, number>>
+  setLayerCounts: (layerKey: string, counts: Record<string, number>) => void
+
   // Set of disabled sub-layer filters, formatted as "layerKey:value"
   disabledSubFilters: Set<string>
   toggleSubFilter: (layerKey: string, value: string) => void
@@ -100,6 +104,12 @@ export const useMapStore = create<MapStore>((set) => ({
   setLayerGroups: (layerKey, groups) =>
     set((s) => ({
       layerGroups: { ...s.layerGroups, [layerKey]: groups },
+    })),
+
+  layerCounts: {},
+  setLayerCounts: (layerKey, counts) =>
+    set((s) => ({
+      layerCounts: { ...s.layerCounts, [layerKey]: counts },
     })),
 
   disabledSubFilters: new Set<string>(),

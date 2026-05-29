@@ -6,10 +6,33 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import { LAYER_CONFIG, LayerKey, RDTR_ZONE_COLORS, KECAMATAN_PALETTE, KELURAHAN_PALETTE } from '@/lib/layerConfig'
 import { useMapStore } from '@/store/mapStore'
 
+function getPolygonCentroid(coordinates: any[]): [number, number] {
+  let totalLng = 0, totalLat = 0, count = 0
+  const traverse = (coords: any[]) => {
+    if (typeof coords[0] === 'number') {
+      totalLng += coords[0]
+      totalLat += coords[1]
+      count++
+    } else {
+      coords.forEach(traverse)
+    }
+  }
+  traverse(coordinates)
+  return count > 0 ? [totalLng / count, totalLat / count] : [0, 0]
+}
+
 // Semua layer ID yang dipakai di map
 function getLayerIds(key: LayerKey): string[] {
   if (key === 'koordinat_menengah_dan_besar') {
-    return [`${key}-clusters`, `${key}-cluster-count`, `${key}-unclustered`]
+    return [
+      `${key}-clusters`,
+      `${key}-cluster-count`,
+      `${key}-unclustered`,
+      'koordinat-kecamatan-circles',
+      'koordinat-kecamatan-labels',
+      'koordinat-kelurahan-circles',
+      'koordinat-kelurahan-labels'
+    ]
   }
   if (LAYER_CONFIG[key].type === 'fill') {
     return [`${key}-fill`, `${key}-outline`]
@@ -20,7 +43,23 @@ function getLayerIds(key: LayerKey): string[] {
 export default function MapContainer() {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
+  const originalCoordinatesRef = useRef<any>(null)
+  const kecCentroidsRef = useRef<any>(null)
+  const kelCentroidsRef = useRef<any>(null)
+  const kelToKecRef = useRef<any>(null)
   const { setMapLoaded, setSelectedFeature, visibleLayers, disabledSubFilters } = useMapStore()
+
+  const enforceLayerStacking = useCallback((map: maplibregl.Map) => {
+    const activeKeys = Array.from(useMapStore.getState().visibleLayers)
+    for (const key of activeKeys) {
+      const ids = getLayerIds(key)
+      for (const id of ids) {
+        if (map.getLayer(id)) {
+          map.moveLayer(id)
+        }
+      }
+    }
+  }, [])
 
   const handleFeatureClick = useCallback(
     (layerKey: LayerKey, e: maplibregl.MapMouseEvent & { features?: maplibregl.MapGeoJSONFeature[] }) => {
@@ -52,17 +91,256 @@ export default function MapContainer() {
   // Fungsi untuk menambahkan layer ke map setelah data di-fetch
   const addLayerToMap = useCallback(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (map: maplibregl.Map, key: LayerKey, data: any) => {
+    async (map: maplibregl.Map, key: LayerKey, data: any) => {
       const config = LAYER_CONFIG[key] as Record<string, unknown>
 
       if (key === 'koordinat_menengah_dan_besar') {
-        // Point layer dengan clustering
+        // Store original data for dynamic sector filtering and cluster recalculation
+        originalCoordinatesRef.current = data
+
+        const features = data.features || []
+        const uniqueSektors = [
+          ...new Set(
+            features
+              .map((f: { properties?: Record<string, unknown> }) => f.properties?.['Sektor'])
+              .filter(Boolean)
+              .map(String)
+          )
+        ].sort()
+
+        const colorMap = Object.fromEntries(
+          uniqueSektors.map((v, i) => [v, KELURAHAN_PALETTE[i % KELURAHAN_PALETTE.length]])
+        )
+        useMapStore.getState().setLayerColors(key, colorMap)
+
+        // Calculate and store dynamic sector counts
+        const sectorCounts: Record<string, number> = {}
+        for (const f of features) {
+          const s = String(f.properties?.['Sektor'] || '')
+          if (s) {
+            sectorCounts[s] = (sectorCounts[s] || 0) + 1
+          }
+        }
+        useMapStore.getState().setLayerCounts(key, sectorCounts)
+
+        // Fetch administrative boundary data in the background to calculate centroids and project groupings
+        const [kecRes, kelRes] = await Promise.all([
+          fetch('/api/layers/kecamatan').then((r) => r.json()),
+          fetch('/api/layers/kelurahan').then((r) => r.json()),
+        ])
+
+        // Calculate centroids
+        const kecCentroids: Record<string, [number, number]> = {}
+        for (const f of kecRes.features) {
+          const name = f.properties?.WADMKC
+          if (name) {
+            kecCentroids[name] = getPolygonCentroid(f.geometry.coordinates)
+          }
+        }
+        kecCentroidsRef.current = kecCentroids
+
+        const kelCentroids: Record<string, [number, number]> = {}
+        for (const f of kelRes.features) {
+          const name = f.properties?.NAMOBJ
+          if (name) {
+            kelCentroids[name] = getPolygonCentroid(f.geometry.coordinates)
+          }
+        }
+        kelCentroidsRef.current = kelCentroids
+
+        // Map kelurahan to kecamatan
+        const kelToKec: Record<string, string> = {}
+        for (const f of kelRes.features) {
+          const kel = f.properties?.NAMOBJ
+          const kec = f.properties?.WADMKC
+          if (kel && kec) {
+            kelToKec[String(kel)] = String(kec)
+          }
+        }
+        kelToKecRef.current = kelToKec
+
+        // Aggregate project counts and total investments by Kecamatan and Kelurahan
+        const kecAgg: Record<string, { count: number; total_investasi: number; coords: [number, number] }> = {}
+        const kelAgg: Record<string, { count: number; total_investasi: number; coords: [number, number] }> = {}
+
+        const kels = Object.keys(kelCentroids)
+
+        for (const f of features) {
+          const alamat = String(f.properties?.['Alamat Lengkap'] || '')
+          const cleanedInvestasi = String(f.properties?.['Jumlah Investasi'] || '0')
+            .replace(/\./g, '')
+            .replace(/,/g, '.')
+            .replace(/[^0-9.-]+/g, '')
+          const investasi = parseFloat(cleanedInvestasi) || 0
+
+          const kelName = kels.find((k) => alamat.toLowerCase().includes(k.toLowerCase()))
+          if (kelName) {
+            const kecName = kelToKec[kelName]
+
+            if (!kelAgg[kelName]) {
+              kelAgg[kelName] = { count: 0, total_investasi: 0, coords: kelCentroids[kelName] }
+            }
+            kelAgg[kelName].count++
+            kelAgg[kelName].total_investasi += investasi
+
+            if (kecName) {
+              if (!kecAgg[kecName]) {
+                kecAgg[kecName] = { count: 0, total_investasi: 0, coords: kecCentroids[kecName] }
+              }
+              kecAgg[kecName].count++
+              kecAgg[kecName].total_investasi += investasi
+            }
+          }
+        }
+
+        // Build GeoJSON features for aggregates
+        const kecFeatures = Object.entries(kecAgg).map(([name, val]) => ({
+          type: 'Feature' as const,
+          geometry: {
+            type: 'Point' as const,
+            coordinates: val.coords,
+          },
+          properties: {
+            isAggregate: true,
+            level: 'kecamatan',
+            nama_wilayah: name,
+            jumlah_proyek: val.count,
+            total_investasi: val.total_investasi,
+          },
+        }))
+
+        const kelFeatures = Object.entries(kelAgg).map(([name, val]) => ({
+          type: 'Feature' as const,
+          geometry: {
+            type: 'Point' as const,
+            coordinates: val.coords,
+          },
+          properties: {
+            isAggregate: true,
+            level: 'kelurahan',
+            nama_wilayah: name,
+            jumlah_proyek: val.count,
+            total_investasi: val.total_investasi,
+          },
+        }))
+
+        // Add sources for aggregate levels
+        map.addSource('koordinat-kecamatan-clusters', {
+          type: 'geojson',
+          data: {
+            type: 'FeatureCollection',
+            features: kecFeatures,
+          },
+        })
+
+        map.addSource('koordinat-kelurahan-clusters', {
+          type: 'geojson',
+          data: {
+            type: 'FeatureCollection',
+            features: kelFeatures,
+          },
+        })
+
+        // Add Kecamatan cluster circles (maxzoom: 13)
+        map.addLayer({
+          id: 'koordinat-kecamatan-circles',
+          type: 'circle',
+          source: 'koordinat-kecamatan-clusters',
+          maxzoom: 13,
+          paint: {
+            'circle-color': '#fbbf24',
+            'circle-radius': 24,
+            'circle-stroke-width': 2.5,
+            'circle-stroke-color': '#ffffff',
+          },
+        })
+
+        map.addLayer({
+          id: 'koordinat-kecamatan-labels',
+          type: 'symbol',
+          source: 'koordinat-kecamatan-clusters',
+          maxzoom: 13,
+          layout: {
+            'text-field': '{jumlah_proyek}',
+            'text-size': 13,
+            'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+          },
+          paint: {
+            'text-color': '#ffffff',
+          },
+        })
+
+        // Add Kelurahan cluster circles (minzoom: 13, maxzoom: 14.5)
+        map.addLayer({
+          id: 'koordinat-kelurahan-circles',
+          type: 'circle',
+          source: 'koordinat-kelurahan-clusters',
+          minzoom: 13,
+          maxzoom: 14.5,
+          paint: {
+            'circle-color': '#f59e0b',
+            'circle-radius': 20,
+            'circle-stroke-width': 2,
+            'circle-stroke-color': '#ffffff',
+          },
+        })
+
+        map.addLayer({
+          id: 'koordinat-kelurahan-labels',
+          type: 'symbol',
+          source: 'koordinat-kelurahan-clusters',
+          minzoom: 13,
+          maxzoom: 14.5,
+          layout: {
+            'text-field': '{jumlah_proyek}',
+            'text-size': 12,
+            'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+          },
+          paint: {
+            'text-color': '#ffffff',
+          },
+        })
+
+        // Click listeners for administrative clusters
+        map.on('click', 'koordinat-kecamatan-circles', (e) => {
+          if (!e.features || e.features.length === 0) return
+          const feature = e.features[0]
+          setSelectedFeature({
+            layerKey: 'koordinat_menengah_dan_besar',
+            properties: feature.properties || {},
+            coordinates: [e.lngLat.lng, e.lngLat.lat],
+          })
+        })
+        map.on('mouseenter', 'koordinat-kecamatan-circles', () => {
+          map.getCanvas().style.cursor = 'pointer'
+        })
+        map.on('mouseleave', 'koordinat-kecamatan-circles', () => {
+          map.getCanvas().style.cursor = ''
+        })
+
+        map.on('click', 'koordinat-kelurahan-circles', (e) => {
+          if (!e.features || e.features.length === 0) return
+          const feature = e.features[0]
+          setSelectedFeature({
+            layerKey: 'koordinat_menengah_dan_besar',
+            properties: feature.properties || {},
+            coordinates: [e.lngLat.lng, e.lngLat.lat],
+          })
+        })
+        map.on('mouseenter', 'koordinat-kelurahan-circles', () => {
+          map.getCanvas().style.cursor = 'pointer'
+        })
+        map.on('mouseleave', 'koordinat-kelurahan-circles', () => {
+          map.getCanvas().style.cursor = ''
+        })
+
+        // Point layer dengan clustering (hanya muncul saat minzoom: 13.5)
         map.addSource(key, {
           type: 'geojson',
           data,
           cluster: true,
-          clusterMaxZoom: 14,
-          clusterRadius: 50,
+          clusterMaxZoom: 16,
+          clusterRadius: 40,
         })
 
         map.addLayer({
@@ -70,6 +348,7 @@ export default function MapContainer() {
           type: 'circle',
           source: key,
           filter: ['has', 'point_count'],
+          minzoom: 14.5,
           paint: {
             'circle-color': [
               'step',
@@ -99,6 +378,7 @@ export default function MapContainer() {
           type: 'symbol',
           source: key,
           filter: ['has', 'point_count'],
+          minzoom: 14.5,
           layout: {
             'text-field': '{point_count_abbreviated}',
             'text-size': 13,
@@ -114,8 +394,14 @@ export default function MapContainer() {
           type: 'circle',
           source: key,
           filter: ['!', ['has', 'point_count']],
+          minzoom: 14.5,
           paint: {
-            'circle-color': (config.color as string) || '#f59e0b',
+            'circle-color': [
+              'match',
+              ['get', 'Sektor'],
+              ...Object.entries(colorMap).flatMap(([val, color]) => [val, color]),
+              '#f59e0b',
+            ] as any,
             'circle-radius': (config.radius as number) || 7,
             'circle-stroke-width': (config.strokeWidth as number) || 1.5,
             'circle-stroke-color': (config.strokeColor as string) || '#ffffff',
@@ -179,13 +465,23 @@ export default function MapContainer() {
         if (config.colorByProperty) {
           const prop = config.colorByProperty as string
           let colorMap: Record<string, string>
+          const features = data.features || []
+
+          // Calculate and store dynamic feature counts
+          const counts: Record<string, number> = {}
+          for (const f of features) {
+            const val = String(f.properties?.[prop] || '')
+            if (val) {
+              counts[val] = (counts[val] || 0) + 1
+            }
+          }
+          useMapStore.getState().setLayerCounts(key, counts)
 
           if (key === 'pola_rdtr') {
             colorMap = Object.fromEntries(
               Object.entries(RDTR_ZONE_COLORS).map(([k, v]) => [k, v.color])
             )
           } else {
-            const features = data.features || []
             const uniqueValues = [
               ...new Set(
                 features
@@ -264,8 +560,11 @@ export default function MapContainer() {
           map.getCanvas().style.cursor = ''
         })
       }
+
+      // Enforce correct stacking order when a layer is newly added
+      enforceLayerStacking(map)
     },
-    [handleFeatureClick]
+    [handleFeatureClick, enforceLayerStacking]
   )
 
   // Fungsi untuk fetch data dan tambahkan ke map
@@ -285,7 +584,7 @@ export default function MapContainer() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         const data = await res.json()
 
-        addLayerToMap(map, key, data)
+        await addLayerToMap(map, key, data)
         store.setLoaded(key)
       } catch (err) {
         console.error(`Failed to fetch layer ${key}:`, err)
@@ -369,7 +668,10 @@ export default function MapContainer() {
         }
       }
     }
-  }, [visibleLayers, fetchAndAddLayer])
+
+    // Enforce correct stacking order when visibility changes
+    enforceLayerStacking(map)
+  }, [visibleLayers, fetchAndAddLayer, enforceLayerStacking])
 
   // React ke perubahan disabledSubFilters — update filter pada layer di map
   useEffect(() => {
@@ -378,6 +680,104 @@ export default function MapContainer() {
 
     const allKeys = Object.keys(LAYER_CONFIG) as LayerKey[]
     for (const key of allKeys) {
+      if (key === 'koordinat_menengah_dan_besar') {
+        const source = map.getSource(key) as maplibregl.GeoJSONSource | undefined
+        const sourceKec = map.getSource('koordinat-kecamatan-clusters') as maplibregl.GeoJSONSource | undefined
+        const sourceKel = map.getSource('koordinat-kelurahan-clusters') as maplibregl.GeoJSONSource | undefined
+
+        if (source && originalCoordinatesRef.current) {
+          const disabledValues = Array.from(disabledSubFilters)
+            .filter((val) => val.startsWith('koordinat_menengah_dan_besar:'))
+            .map((val) => val.slice('koordinat_menengah_dan_besar:'.length))
+
+          const filteredFeatures = originalCoordinatesRef.current.features.filter(
+            (f: any) => !disabledValues.includes(String(f.properties?.['Sektor'] || ''))
+          )
+
+          source.setData({
+            type: 'FeatureCollection',
+            features: filteredFeatures,
+          })
+
+          // Dynamically recalculate Kecamatan and Kelurahan aggregates on filter change
+          if (sourceKec && sourceKel && kecCentroidsRef.current && kelCentroidsRef.current && kelToKecRef.current) {
+            const kecAgg: Record<string, { count: number; total_investasi: number; coords: [number, number] }> = {}
+            const kelAgg: Record<string, { count: number; total_investasi: number; coords: [number, number] }> = {}
+
+            const kels = Object.keys(kelCentroidsRef.current)
+
+            for (const f of filteredFeatures) {
+              const alamat = String(f.properties?.['Alamat Lengkap'] || '')
+              const cleanedInvestasi = String(f.properties?.['Jumlah Investasi'] || '0')
+                .replace(/\./g, '')
+                .replace(/,/g, '.')
+                .replace(/[^0-9.-]+/g, '')
+              const investasi = parseFloat(cleanedInvestasi) || 0
+
+              const kelName = kels.find((k) => alamat.toLowerCase().includes(k.toLowerCase()))
+              if (kelName) {
+                const kecName = kelToKecRef.current[kelName]
+
+                if (!kelAgg[kelName]) {
+                  kelAgg[kelName] = { count: 0, total_investasi: 0, coords: kelCentroidsRef.current[kelName] }
+                }
+                kelAgg[kelName].count++
+                kelAgg[kelName].total_investasi += investasi
+
+                if (kecName) {
+                  if (!kecAgg[kecName]) {
+                    kecAgg[kecName] = { count: 0, total_investasi: 0, coords: kecCentroidsRef.current[kecName] }
+                  }
+                  kecAgg[kecName].count++
+                  kecAgg[kecName].total_investasi += investasi
+                }
+              }
+            }
+
+            const kecFeatures = Object.entries(kecAgg).map(([name, val]) => ({
+              type: 'Feature' as const,
+              geometry: {
+                type: 'Point' as const,
+                coordinates: val.coords,
+              },
+              properties: {
+                isAggregate: true,
+                level: 'kecamatan',
+                nama_wilayah: name,
+                jumlah_proyek: val.count,
+                total_investasi: val.total_investasi,
+              },
+            }))
+
+            const kelFeatures = Object.entries(kelAgg).map(([name, val]) => ({
+              type: 'Feature' as const,
+              geometry: {
+                type: 'Point' as const,
+                coordinates: val.coords,
+              },
+              properties: {
+                isAggregate: true,
+                level: 'kelurahan',
+                nama_wilayah: name,
+                jumlah_proyek: val.count,
+                total_investasi: val.total_investasi,
+              },
+            }))
+
+            sourceKec.setData({
+              type: 'FeatureCollection',
+              features: kecFeatures,
+            })
+
+            sourceKel.setData({
+              type: 'FeatureCollection',
+              features: kelFeatures,
+            })
+          }
+        }
+        continue
+      }
+
       const config = LAYER_CONFIG[key]
       if (!('colorByProperty' in config) || !config.colorByProperty) continue
 
