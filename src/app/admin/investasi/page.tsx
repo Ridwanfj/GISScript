@@ -59,7 +59,10 @@ export default function InvestasiPage() {
           },
         }
       )
-      if (!res.ok) throw new Error('Gagal mengambil data')
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}))
+        throw new Error(errData.error || 'Gagal mengambil data')
+      }
       const json = await res.json()
       setData(json.data)
       setTotal(json.total)
@@ -211,7 +214,7 @@ export default function InvestasiPage() {
                     <td className="px-6 py-4 font-mono text-emerald-400">
                       {(() => {
                         const val = item['Jumlah Investasi']
-                        if (val === null || val === undefined || val === '') return '-'
+                        if (val === null || val === undefined || String(val) === '') return '-'
                         
                         // Parse safely, stripping non-digits if it's a string
                         const num = typeof val === 'number' 

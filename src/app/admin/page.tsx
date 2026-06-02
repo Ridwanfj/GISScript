@@ -95,11 +95,14 @@ export default function AdminDashboardPage() {
           Authorization: 'Bearer ' + token,
         },
       })
-      if (!res.ok) throw new Error('Failed to fetch stats')
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to fetch stats')
+      }
       const data = await res.json()
       setStats(data)
-    } catch {
-      setError('Gagal memuat statistik')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Gagal memuat statistik')
     } finally {
       setLoading(false)
     }
