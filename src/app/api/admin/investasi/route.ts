@@ -15,7 +15,7 @@ export async function GET(req: Request) {
     const limit = parseInt(url.searchParams.get('limit') || '20')
     const search = url.searchParams.get('search') || ''
 
-    if (/[,\(\)\*\\]/.test(search)) {
+    if (search && !/^[\p{L}\p{N}\s._-]*$/u.test(search)) {
       return NextResponse.json(
         { error: 'Parameter search mengandung karakter tidak valid' },
         { status: 400 }

@@ -25,7 +25,7 @@ export async function requireAdmin(request: Request): Promise<AdminAuthResult> {
   }
 
   const role = user.app_metadata?.role ?? user.user_metadata?.role
-  if (role && role !== 'admin') {
+  if (!role || role !== 'admin') {
     return { response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
   }
 
