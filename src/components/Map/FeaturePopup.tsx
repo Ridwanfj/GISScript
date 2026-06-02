@@ -7,12 +7,18 @@ function formatValue(key: string, value: unknown): string {
   if (value === null || value === undefined) return '-'
 
   // Format currency IDR untuk Jumlah Investasi
-  if (key === 'Jumlah Investasi' && typeof value === 'number') {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      maximumFractionDigits: 0,
-    }).format(value)
+  if (key === 'Jumlah Investasi') {
+    const num = typeof value === 'number' 
+      ? value 
+      : Number(String(value).replace(/[^\d]/g, ''))
+      
+    if (!isNaN(num) && String(value).replace(/[^\d]/g, '') !== '') {
+      return new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        maximumFractionDigits: 0,
+      }).format(num)
+    }
   }
 
   // Format angka luas
