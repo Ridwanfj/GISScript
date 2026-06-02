@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { getAccessToken } from '@/lib/supabaseClient'
 
 interface ProyekInvestasi {
   id: number
@@ -17,7 +17,6 @@ interface ProyekInvestasi {
 }
 
 export default function InvestasiPage() {
-  const router = useRouter()
   const [data, setData] = useState<ProyekInvestasi[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -47,10 +46,18 @@ export default function InvestasiPage() {
     setLoading(true)
     setError('')
     try {
+      const token = await getAccessToken()
+      if (!token) throw new Error('Sesi tidak valid. Silakan login kembali.')
+
       const res = await fetch(
         `/api/admin/investasi?page=${page}&limit=${limit}&search=${encodeURIComponent(
           debouncedSearch
-        )}`
+        )}`,
+        {
+          headers: {
+            Authorization: 'Bearer ' + token,
+          },
+        }
       )
       if (!res.ok) throw new Error('Gagal mengambil data')
       const json = await res.json()
@@ -76,8 +83,14 @@ export default function InvestasiPage() {
     if (!itemToDelete) return
     setIsDeleting(itemToDelete.id)
     try {
+      const token = await getAccessToken()
+      if (!token) throw new Error('Sesi tidak valid. Silakan login kembali.')
+
       const res = await fetch(`/api/admin/investasi/${itemToDelete.id}`, {
         method: 'DELETE',
+        headers: {
+          Authorization: 'Bearer ' + token,
+        },
       })
       if (!res.ok) throw new Error('Gagal menghapus data')
       

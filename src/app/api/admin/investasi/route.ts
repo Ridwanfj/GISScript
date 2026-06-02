@@ -1,15 +1,26 @@
 import { getSupabase } from '@/lib/supabase'
+import { requireAdmin } from '@/lib/adminAuth'
 import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(req: Request) {
   try {
+    const auth = await requireAdmin(req)
+    if ('response' in auth) return auth.response
+
     const supabase = getSupabase()
     const url = new URL(req.url)
     const page = parseInt(url.searchParams.get('page') || '1')
     const limit = parseInt(url.searchParams.get('limit') || '20')
     const search = url.searchParams.get('search') || ''
+
+    if (/[,\(\)\*\\]/.test(search)) {
+      return NextResponse.json(
+        { error: 'Parameter search mengandung karakter tidak valid' },
+        { status: 400 }
+      )
+    }
 
     const from = (page - 1) * limit
     const to = from + limit - 1
@@ -47,6 +58,9 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
+    const auth = await requireAdmin(req)
+    if ('response' in auth) return auth.response
+
     const supabase = getSupabase()
     const body = await req.json()
 

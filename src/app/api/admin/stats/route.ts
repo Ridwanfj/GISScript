@@ -1,4 +1,5 @@
 import { getSupabase } from '@/lib/supabase'
+import { requireAdmin } from '@/lib/adminAuth'
 import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
@@ -11,8 +12,11 @@ const TABLES = [
   'koordinat_menengah_dan_besar',
 ]
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const auth = await requireAdmin(req)
+    if ('response' in auth) return auth.response
+
     const supabase = getSupabase()
     const stats: Record<string, number> = {}
 

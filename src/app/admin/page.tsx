@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { getAccessToken } from '@/lib/supabaseClient'
 
 interface Stats {
   garis_kota: number
@@ -86,7 +87,14 @@ export default function AdminDashboardPage() {
 
   const fetchStats = async () => {
     try {
-      const res = await fetch('/api/admin/stats')
+      const token = await getAccessToken()
+      if (!token) throw new Error('Sesi tidak valid. Silakan login kembali.')
+
+      const res = await fetch('/api/admin/stats', {
+        headers: {
+          Authorization: 'Bearer ' + token,
+        },
+      })
       if (!res.ok) throw new Error('Failed to fetch stats')
       const data = await res.json()
       setStats(data)
@@ -124,11 +132,10 @@ export default function AdminDashboardPage() {
 
       {/* Stats grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-        {statCards.map((card, idx) => (
+        {statCards.map((card) => (
           <div
             key={card.key}
             className="relative group rounded-2xl bg-gray-900/80 border border-gray-800/50 p-5 hover:border-gray-700/60 transition-all duration-300 overflow-hidden"
-            style={{ animationDelay: `${idx * 80}ms` }}
           >
             {/* Background glow */}
             <div className={`absolute -top-10 -right-10 w-32 h-32 rounded-full ${card.bgGlow} blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />

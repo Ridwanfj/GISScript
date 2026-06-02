@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { getAccessToken } from '@/lib/supabaseClient'
 
 interface ProyekInvestasi {
   id?: number
@@ -47,7 +48,14 @@ export default function InvestasiForm({ id }: InvestasiFormProps) {
 
   const fetchData = async () => {
     try {
-      const res = await fetch(`/api/admin/investasi/${id}`)
+      const token = await getAccessToken()
+      if (!token) throw new Error('Sesi tidak valid. Silakan login kembali.')
+
+      const res = await fetch(`/api/admin/investasi/${id}`, {
+        headers: {
+          Authorization: 'Bearer ' + token,
+        },
+      })
       if (!res.ok) throw new Error('Gagal mengambil data')
       const data = await res.json()
       setFormData(data)
@@ -72,10 +80,14 @@ export default function InvestasiForm({ id }: InvestasiFormProps) {
     setError('')
 
     try {
+      const token = await getAccessToken()
+      if (!token) throw new Error('Sesi tidak valid. Silakan login kembali.')
+
       const res = await fetch(isEdit ? `/api/admin/investasi/${id}` : '/api/admin/investasi', {
         method: isEdit ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: 'Bearer ' + token,
         },
         body: JSON.stringify(formData),
       })
@@ -189,11 +201,11 @@ export default function InvestasiForm({ id }: InvestasiFormProps) {
 
             {/* Skala Usaha */}
             <div className="space-y-2">
-              <label htmlFor="Uraian Skala Usaha" className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              <label htmlFor="uraian_skala_usaha" className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">
                 Skala Usaha
               </label>
               <select
-                id="Uraian Skala Usaha"
+                id="uraian_skala_usaha"
                 name="Uraian Skala Usaha"
                 required
                 value={formData['Uraian Skala Usaha']}
@@ -228,12 +240,12 @@ export default function InvestasiForm({ id }: InvestasiFormProps) {
 
             {/* Jumlah Investasi */}
             <div className="md:col-span-2 space-y-2">
-              <label htmlFor="Jumlah Investasi" className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              <label htmlFor="jumlah_investasi" className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">
                 Jumlah Investasi (Rp)
               </label>
               <input
                 type="number"
-                id="Jumlah Investasi"
+                id="jumlah_investasi"
                 name="Jumlah Investasi"
                 required
                 min="0"
@@ -246,11 +258,11 @@ export default function InvestasiForm({ id }: InvestasiFormProps) {
 
             {/* Alamat Lengkap */}
             <div className="md:col-span-2 space-y-2">
-              <label htmlFor="Alamat Lengkap" className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              <label htmlFor="alamat_lengkap" className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">
                 Alamat Lengkap
               </label>
               <textarea
-                id="Alamat Lengkap"
+                id="alamat_lengkap"
                 name="Alamat Lengkap"
                 required
                 rows={3}

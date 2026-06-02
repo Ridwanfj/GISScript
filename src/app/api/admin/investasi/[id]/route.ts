@@ -1,15 +1,19 @@
 import { getSupabase } from '@/lib/supabase'
+import { requireAdmin } from '@/lib/adminAuth'
 import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
 
   try {
+    const auth = await requireAdmin(req)
+    if ('response' in auth) return auth.response
+
     const supabase = getSupabase()
     const { data, error } = await supabase
       .from('koordinat_menengah_dan_besar')
@@ -35,6 +39,9 @@ export async function PUT(
   const { id } = await params
 
   try {
+    const auth = await requireAdmin(req)
+    if ('response' in auth) return auth.response
+
     const supabase = getSupabase()
     const body = await req.json()
 
@@ -57,12 +64,15 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
 
   try {
+    const auth = await requireAdmin(req)
+    if ('response' in auth) return auth.response
+
     const supabase = getSupabase()
     const { error } = await supabase
       .from('koordinat_menengah_dan_besar')
