@@ -66,6 +66,7 @@ export const LAYER_CONFIG = {
     label: 'Proyek Investasi',
     tableName: 'koordinat_menengah_dan_besar',
     type: 'circle' as const,
+    colorByProperty: 'Sektor',
     color: '#f59e0b',
     radius: 7,
     strokeColor: '#ffffff',

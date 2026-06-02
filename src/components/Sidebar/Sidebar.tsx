@@ -2,7 +2,6 @@
 
 import Image from 'next/image'
 import LayerControl from '@/components/Map/LayerControl'
-import Legend from '@/components/Sidebar/Legend'
 
 interface SidebarProps {
   isOpen: boolean
@@ -70,16 +69,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           {/* Layer toggles */}
           <div>
             <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400 px-1 mb-3">
-              Layer Peta
+              Layer Peta & Legenda
             </h2>
             <LayerControl />
           </div>
-
-          {/* Divider */}
-          <div className="border-t border-gray-800/50" />
-
-          {/* Legend */}
-          <Legend />
         </div>
 
         {/* Footer */}
