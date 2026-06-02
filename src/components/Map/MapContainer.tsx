@@ -21,12 +21,84 @@ function getPolygonCentroid(coordinates: any[]): [number, number] {
   return count > 0 ? [totalLng / count, totalLat / count] : [0, 0]
 }
 
+function disperseCoordinates(features: any[]): any[] {
+  const points: any[] = []
+  const nonPoints: any[] = []
+  
+  for (const f of features) {
+    if (f.geometry?.type === 'Point') {
+      points.push(f)
+    } else {
+      nonPoints.push(f)
+    }
+  }
+  
+  const groups: any[][] = []
+  const threshold = 0.0001 // ~11 meters threshold for grouping close/overlapping points
+  
+  const getDistance = (c1: [number, number], c2: [number, number]) => {
+    const dx = c1[0] - c2[0]
+    const dy = c1[1] - c2[1]
+    return Math.sqrt(dx * dx + dy * dy)
+  }
+
+  for (const f of points) {
+    const coords = f.geometry.coordinates as [number, number]
+    let added = false
+    
+    for (const group of groups) {
+      const center = group[0].geometry.coordinates as [number, number]
+      if (getDistance(coords, center) < threshold) {
+        group.push(f)
+        added = true
+        break
+      }
+    }
+    
+    if (!added) {
+      groups.push([f])
+    }
+  }
+  
+  const dispersedFeatures: any[] = []
+  const R = 0.00015 // ~15 meters dispersal radius
+  
+  for (const group of groups) {
+    if (group.length === 1) {
+      dispersedFeatures.push(group[0])
+    } else {
+      const N = group.length
+      let sumLng = 0, sumLat = 0
+      for (const f of group) {
+        sumLng += f.geometry.coordinates[0]
+        sumLat += f.geometry.coordinates[1]
+      }
+      const centerLng = sumLng / N
+      const centerLat = sumLat / N
+      
+      group.forEach((f, index) => {
+        const angle = (index * 2 * Math.PI) / N
+        const offsetLng = R * Math.cos(angle)
+        const offsetLat = R * Math.sin(angle) / Math.cos(centerLat * Math.PI / 180)
+        
+        dispersedFeatures.push({
+          ...f,
+          geometry: {
+            ...f.geometry,
+            coordinates: [centerLng + offsetLng, centerLat + offsetLat]
+          }
+        })
+      })
+    }
+  }
+  
+  return [...dispersedFeatures, ...nonPoints]
+}
+
 // Semua layer ID yang dipakai di map
 function getLayerIds(key: LayerKey): string[] {
   if (key === 'koordinat_menengah_dan_besar') {
     return [
-      `${key}-clusters`,
-      `${key}-cluster-count`,
       `${key}-unclustered`,
       'koordinat-kecamatan-circles',
       'koordinat-kecamatan-labels',
@@ -95,10 +167,17 @@ export default function MapContainer() {
       const config = LAYER_CONFIG[key] as Record<string, unknown>
 
       if (key === 'koordinat_menengah_dan_besar') {
-        // Store original data for dynamic sector filtering and cluster recalculation
-        originalCoordinatesRef.current = data
+        // Disperse overlapping coordinates to make each individual project visible and clickable
+        const dispersedFeatures = disperseCoordinates(data.features || [])
+        const dispersedData = {
+          ...data,
+          features: dispersedFeatures
+        }
 
-        const features = data.features || []
+        // Store original data for dynamic sector filtering and cluster recalculation
+        originalCoordinatesRef.current = dispersedData
+
+        const features = dispersedData.features || []
         const uniqueSektors = [
           ...new Set(
             features
@@ -346,66 +425,16 @@ export default function MapContainer() {
           map.getCanvas().style.cursor = ''
         })
 
-        // Point layer dengan clustering (hanya muncul saat minzoom: 13.5)
+        // Point layer (hanya muncul saat minzoom: 14.5) - Tanpa clustering agar setelah Kelurahan langsung detail proyek
         map.addSource(key, {
           type: 'geojson',
-          data,
-          cluster: true,
-          clusterMaxZoom: 16,
-          clusterRadius: 40,
-        })
-
-        map.addLayer({
-          id: `${key}-clusters`,
-          type: 'circle',
-          source: key,
-          filter: ['has', 'point_count'],
-          minzoom: 14.5,
-          paint: {
-            'circle-color': [
-              'step',
-              ['get', 'point_count'],
-              '#fbbf24',
-              10,
-              '#f97316',
-              30,
-              '#ef4444',
-            ],
-            'circle-radius': [
-              'step',
-              ['get', 'point_count'],
-              18,
-              10,
-              24,
-              30,
-              32,
-            ],
-            'circle-stroke-width': 2,
-            'circle-stroke-color': '#ffffff',
-          },
-        })
-
-        map.addLayer({
-          id: `${key}-cluster-count`,
-          type: 'symbol',
-          source: key,
-          filter: ['has', 'point_count'],
-          minzoom: 14.5,
-          layout: {
-            'text-field': '{point_count_abbreviated}',
-            'text-size': 13,
-            'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
-          },
-          paint: {
-            'text-color': '#ffffff',
-          },
+          data: dispersedData,
         })
 
         map.addLayer({
           id: `${key}-unclustered`,
           type: 'circle',
           source: key,
-          filter: ['!', ['has', 'point_count']],
           minzoom: 14.5,
           paint: {
             'circle-color': [
@@ -426,27 +455,6 @@ export default function MapContainer() {
         })
         map.on('mouseleave', `${key}-unclustered`, () => {
           map.getCanvas().style.cursor = ''
-        })
-
-        map.on('click', `${key}-clusters`, async (e) => {
-          const features = map.queryRenderedFeatures(e.point, {
-            layers: [`${key}-clusters`],
-          })
-          if (!features.length) return
-          const clusterId = features[0].properties?.cluster_id
-          const source = map.getSource(key) as maplibregl.GeoJSONSource
-          try {
-            const zoom = await source.getClusterExpansionZoom(clusterId)
-            const geometry = features[0].geometry
-            if (geometry.type === 'Point') {
-              map.easeTo({
-                center: geometry.coordinates as [number, number],
-                zoom,
-              })
-            }
-          } catch {
-            // ignore cluster zoom errors
-          }
         })
       } else if (config.type === 'line') {
         map.addSource(key, { type: 'geojson', data })
