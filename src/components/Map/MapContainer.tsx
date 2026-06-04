@@ -47,7 +47,7 @@ export default function MapContainer() {
   const kecCentroidsRef = useRef<any>(null)
   const kelCentroidsRef = useRef<any>(null)
   const kelToKecRef = useRef<any>(null)
-  const { setMapLoaded, setSelectedFeature, visibleLayers, disabledSubFilters } = useMapStore()
+  const { setMapLoaded, setMapInstance, setSelectedFeature, visibleLayers, disabledSubFilters } = useMapStore()
 
   const enforceLayerStacking = useCallback((map: maplibregl.Map) => {
     const activeKeys = Array.from(useMapStore.getState().visibleLayers)
@@ -522,8 +522,10 @@ export default function MapContainer() {
       store.setLoading(key, true)
 
       try {
-        const res = await fetch(`/api/layers/${LAYER_CONFIG[key].tableName}`)
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const url = `/api/layers/${LAYER_CONFIG[key].tableName}`
+        console.log(`[MapContainer] Fetching layer: ${key} from ${url}`)
+        const res = await fetch(url)
+        if (!res.ok) throw new Error(`HTTP ${res.status} for URL: ${url}`)
         const data = await res.json()
 
         await addLayerToMap(map, key, data)
@@ -575,12 +577,14 @@ export default function MapContainer() {
 
     map.on('load', () => {
       mapRef.current = map
+      setMapInstance(map)
       setMapLoaded(true)
     })
 
     return () => {
       map.remove()
       mapRef.current = null
+      setMapInstance(null)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
