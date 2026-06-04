@@ -11,6 +11,8 @@ interface SelectedFeature {
 interface MapStore {
   // Layers yang sedang aktif (visible)
   visibleLayers: Set<LayerKey>
+  // Urutan aktivasi layer — layer terakhir di array = paling atas di map
+  layerOrder: LayerKey[]
   toggleLayer: (key: LayerKey) => void
 
   // Layers yang sedang loading data dari API
@@ -55,15 +57,21 @@ interface MapStore {
 export const useMapStore = create<MapStore>((set, get) => ({
   // Awalnya SEMUA layer OFF — user harus mengaktifkan manual
   visibleLayers: new Set<LayerKey>(),
+  layerOrder: [],
   toggleLayer: (key) =>
     set((s) => {
       const nextLayers = new Set(s.visibleLayers)
       const nextSubFilters = new Set(s.disabledSubFilters)
+      let nextOrder = [...s.layerOrder]
       
       if (nextLayers.has(key)) {
         nextLayers.delete(key)
+        // Remove from order
+        nextOrder = nextOrder.filter((k) => k !== key)
       } else {
         nextLayers.add(key)
+        // Push to end — newest activation = topmost layer
+        nextOrder.push(key)
         // Reset sub-filters for this layer when enabling it again
         const prefix = `${key}:`
         for (const filter of nextSubFilters) {
@@ -74,6 +82,7 @@ export const useMapStore = create<MapStore>((set, get) => ({
       }
       return { 
         visibleLayers: nextLayers,
+        layerOrder: nextOrder,
         disabledSubFilters: nextSubFilters
       }
     }),

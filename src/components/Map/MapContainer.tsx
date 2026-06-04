@@ -47,11 +47,12 @@ export default function MapContainer() {
   const kecCentroidsRef = useRef<any>(null)
   const kelCentroidsRef = useRef<any>(null)
   const kelToKecRef = useRef<any>(null)
-  const { setMapLoaded, setMapInstance, setSelectedFeature, visibleLayers, disabledSubFilters } = useMapStore()
+  const { setMapLoaded, setMapInstance, setSelectedFeature, visibleLayers, disabledSubFilters, selectedFeature } = useMapStore()
 
   const enforceLayerStacking = useCallback((map: maplibregl.Map) => {
-    const activeKeys = Array.from(useMapStore.getState().visibleLayers)
-    for (const key of activeKeys) {
+    // Use layerOrder for deterministic stacking — last activated = topmost
+    const orderedKeys = useMapStore.getState().layerOrder
+    for (const key of orderedKeys) {
       const ids = getLayerIds(key)
       for (const id of ids) {
         if (map.getLayer(id)) {
@@ -79,10 +80,17 @@ export default function MapContainer() {
         }
       }
 
+      // Use the feature's actual geometry for Point features so the ring is centered precisely
+      const geom = feature.geometry as GeoJSON.Geometry
+      const coords: [number, number] =
+        geom.type === 'Point'
+          ? [geom.coordinates[0], geom.coordinates[1]]
+          : [e.lngLat.lng, e.lngLat.lat]
+
       setSelectedFeature({
         layerKey,
         properties: parsed,
-        coordinates: [e.lngLat.lng, e.lngLat.lat],
+        coordinates: coords,
       })
     },
     [setSelectedFeature]
@@ -767,6 +775,140 @@ export default function MapContainer() {
       }
     }
   }, [disabledSubFilters])
+
+  // ── Pulsing neon highlight for selected feature ──
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+
+    const HIGHLIGHT_SOURCE = '__highlight_pulse_src'
+    const HIGHLIGHT_OUTER = '__highlight_pulse_outer'
+    const HIGHLIGHT_MIDDLE = '__highlight_pulse_middle'
+    const HIGHLIGHT_INNER = '__highlight_pulse_inner'
+
+    // Clean up existing highlight layers
+    const cleanupLayers = () => {
+      for (const id of [HIGHLIGHT_INNER, HIGHLIGHT_MIDDLE, HIGHLIGHT_OUTER]) {
+        if (map.getLayer(id)) map.removeLayer(id)
+      }
+      if (map.getSource(HIGHLIGHT_SOURCE)) map.removeSource(HIGHLIGHT_SOURCE)
+    }
+
+    // Only highlight point features (proyek investasi)
+    if (!selectedFeature || selectedFeature.layerKey !== 'koordinat_menengah_dan_besar' || selectedFeature.properties.isAggregate) {
+      cleanupLayers()
+      return
+    }
+
+    const { coordinates } = selectedFeature
+
+    // Build GeoJSON point
+    const geojson: GeoJSON.FeatureCollection = {
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates },
+          properties: {},
+        },
+      ],
+    }
+
+    // If source already exists, just update coordinates; otherwise create layers
+    const existingSource = map.getSource(HIGHLIGHT_SOURCE) as maplibregl.GeoJSONSource | undefined
+    if (existingSource) {
+      existingSource.setData(geojson)
+    } else {
+      map.addSource(HIGHLIGHT_SOURCE, { type: 'geojson', data: geojson })
+
+      // Outer pulsing ring (large, subtle)
+      map.addLayer({
+        id: HIGHLIGHT_OUTER,
+        type: 'circle',
+        source: HIGHLIGHT_SOURCE,
+        paint: {
+          'circle-radius': 28,
+          'circle-color': 'transparent',
+          'circle-stroke-width': 2,
+          'circle-stroke-color': '#000000',
+          'circle-stroke-opacity': 0.3,
+        },
+      })
+
+      // Middle pulsing ring
+      map.addLayer({
+        id: HIGHLIGHT_MIDDLE,
+        type: 'circle',
+        source: HIGHLIGHT_SOURCE,
+        paint: {
+          'circle-radius': 20,
+          'circle-color': 'transparent',
+          'circle-stroke-width': 2.5,
+          'circle-stroke-color': '#000000',
+          'circle-stroke-opacity': 0.5,
+        },
+      })
+
+      // Inner glow ring (bright neon core)
+      map.addLayer({
+        id: HIGHLIGHT_INNER,
+        type: 'circle',
+        source: HIGHLIGHT_SOURCE,
+        paint: {
+          'circle-radius': 12,
+          'circle-color': 'rgba(0, 0, 0, 0.15)',
+          'circle-stroke-width': 3,
+          'circle-stroke-color': '#000000',
+          'circle-stroke-opacity': 0.9,
+        },
+      })
+    }
+
+    // ── Animate the rings with a smooth pulse ──
+    let animationId: number
+    let startTime: number | null = null
+
+    const animate = (timestamp: number) => {
+      if (!startTime) startTime = timestamp
+      const elapsed = timestamp - startTime
+
+      // 1.6 second cycle
+      const t = (elapsed % 1600) / 1600
+      // Smooth sine wave: 0 → 1 → 0
+      const pulse = (Math.sin(t * Math.PI * 2) + 1) / 2
+
+      // Outer ring: size 24–38, opacity 0.15–0.40
+      if (map.getLayer(HIGHLIGHT_OUTER)) {
+        map.setPaintProperty(HIGHLIGHT_OUTER, 'circle-radius', 24 + pulse * 14)
+        map.setPaintProperty(HIGHLIGHT_OUTER, 'circle-stroke-opacity', 0.15 + pulse * 0.25)
+      }
+
+      // Middle ring: size 16–24, opacity 0.3–0.7
+      if (map.getLayer(HIGHLIGHT_MIDDLE)) {
+        map.setPaintProperty(HIGHLIGHT_MIDDLE, 'circle-radius', 16 + pulse * 8)
+        map.setPaintProperty(HIGHLIGHT_MIDDLE, 'circle-stroke-opacity', 0.3 + pulse * 0.4)
+      }
+
+      // Inner ring: size 10–14, bright neon glow
+      if (map.getLayer(HIGHLIGHT_INNER)) {
+        map.setPaintProperty(HIGHLIGHT_INNER, 'circle-radius', 10 + pulse * 4)
+        map.setPaintProperty(HIGHLIGHT_INNER, 'circle-stroke-opacity', 0.6 + pulse * 0.4)
+        map.setPaintProperty(
+          HIGHLIGHT_INNER,
+          'circle-color',
+          `rgba(0, 0, 0, ${0.08 + pulse * 0.18})`
+        )
+      }
+
+      animationId = requestAnimationFrame(animate)
+    }
+
+    animationId = requestAnimationFrame(animate)
+
+    return () => {
+      cancelAnimationFrame(animationId)
+    }
+  }, [selectedFeature])
 
   return (
     <div ref={containerRef} className="w-full h-full" />
