@@ -21,79 +21,7 @@ function getPolygonCentroid(coordinates: any[]): [number, number] {
   return count > 0 ? [totalLng / count, totalLat / count] : [0, 0]
 }
 
-function disperseCoordinates(features: any[]): any[] {
-  const points: any[] = []
-  const nonPoints: any[] = []
-  
-  for (const f of features) {
-    if (f.geometry?.type === 'Point') {
-      points.push(f)
-    } else {
-      nonPoints.push(f)
-    }
-  }
-  
-  const groups: any[][] = []
-  const threshold = 0.0001 // ~11 meters threshold for grouping close/overlapping points
-  
-  const getDistance = (c1: [number, number], c2: [number, number]) => {
-    const dx = c1[0] - c2[0]
-    const dy = c1[1] - c2[1]
-    return Math.sqrt(dx * dx + dy * dy)
-  }
 
-  for (const f of points) {
-    const coords = f.geometry.coordinates as [number, number]
-    let added = false
-    
-    for (const group of groups) {
-      const center = group[0].geometry.coordinates as [number, number]
-      if (getDistance(coords, center) < threshold) {
-        group.push(f)
-        added = true
-        break
-      }
-    }
-    
-    if (!added) {
-      groups.push([f])
-    }
-  }
-  
-  const dispersedFeatures: any[] = []
-  const R = 0.00015 // ~15 meters dispersal radius
-  
-  for (const group of groups) {
-    if (group.length === 1) {
-      dispersedFeatures.push(group[0])
-    } else {
-      const N = group.length
-      let sumLng = 0, sumLat = 0
-      for (const f of group) {
-        sumLng += f.geometry.coordinates[0]
-        sumLat += f.geometry.coordinates[1]
-      }
-      const centerLng = sumLng / N
-      const centerLat = sumLat / N
-      
-      group.forEach((f, index) => {
-        const angle = (index * 2 * Math.PI) / N
-        const offsetLng = R * Math.cos(angle)
-        const offsetLat = R * Math.sin(angle) / Math.cos(centerLat * Math.PI / 180)
-        
-        dispersedFeatures.push({
-          ...f,
-          geometry: {
-            ...f.geometry,
-            coordinates: [centerLng + offsetLng, centerLat + offsetLat]
-          }
-        })
-      })
-    }
-  }
-  
-  return [...dispersedFeatures, ...nonPoints]
-}
 
 // Semua layer ID yang dipakai di map
 function getLayerIds(key: LayerKey): string[] {
@@ -167,17 +95,10 @@ export default function MapContainer() {
       const config = LAYER_CONFIG[key] as Record<string, unknown>
 
       if (key === 'koordinat_menengah_dan_besar') {
-        // Disperse overlapping coordinates to make each individual project visible and clickable
-        const dispersedFeatures = disperseCoordinates(data.features || [])
-        const dispersedData = {
-          ...data,
-          features: dispersedFeatures
-        }
-
         // Store original data for dynamic sector filtering and cluster recalculation
-        originalCoordinatesRef.current = dispersedData
+        originalCoordinatesRef.current = data
 
-        const features = dispersedData.features || []
+        const features = data.features || []
         const uniqueSektors = [
           ...new Set(
             features
@@ -402,6 +323,7 @@ export default function MapContainer() {
             coordinates: [e.lngLat.lng, e.lngLat.lat],
           })
         })
+
         map.on('mouseenter', 'koordinat-kecamatan-circles', () => {
           map.getCanvas().style.cursor = 'pointer'
         })
@@ -428,7 +350,7 @@ export default function MapContainer() {
         // Point layer (hanya muncul saat minzoom: 14.5) - Tanpa clustering agar setelah Kelurahan langsung detail proyek
         map.addSource(key, {
           type: 'geojson',
-          data: dispersedData,
+          data,
         })
 
         map.addLayer({

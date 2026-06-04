@@ -66,16 +66,16 @@ export default function FeaturePopup() {
         {/* Content */}
         <div className="px-5 py-4 space-y-2.5">
           <div className="flex justify-between items-start gap-3 py-1.5 border-b border-gray-800/60">
-            <span className="text-xs font-medium text-gray-400 uppercase tracking-wider shrink-0 font-semibold">Nama Wilayah</span>
-            <span className="text-sm text-gray-100 text-right leading-snug font-semibold">{nama_wilayah}</span>
+            <span className="text-xs font-medium text-gray-400 uppercase tracking-wider shrink-0">Nama Wilayah</span>
+            <span className="text-sm text-gray-100 text-right leading-snug">{nama_wilayah}</span>
           </div>
           <div className="flex justify-between items-start gap-3 py-1.5 border-b border-gray-800/60">
-            <span className="text-xs font-medium text-gray-400 uppercase tracking-wider shrink-0 font-semibold">Jumlah Proyek</span>
-            <span className="text-sm text-gray-100 text-right leading-snug font-semibold">{jumlah_proyek} Proyek</span>
+            <span className="text-xs font-medium text-gray-400 uppercase tracking-wider shrink-0">Jumlah Proyek</span>
+            <span className="text-sm text-gray-100 text-right leading-snug">{jumlah_proyek} Proyek</span>
           </div>
           <div className="flex justify-between items-start gap-3 py-1.5 last:border-b-0">
-            <span className="text-xs font-medium text-gray-400 uppercase tracking-wider shrink-0 font-semibold">Total Investasi</span>
-            <span className="text-sm text-gray-100 text-right leading-snug font-semibold text-green-400 font-bold">
+            <span className="text-xs font-medium text-gray-400 uppercase tracking-wider shrink-0">Total Investasi</span>
+            <span className="text-sm text-green-400 text-right leading-snug">
               {formatValue('Jumlah Investasi', total_investasi)}
             </span>
           </div>
