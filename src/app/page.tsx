@@ -4,6 +4,7 @@ import { useState } from 'react'
 import dynamic from 'next/dynamic'
 import Sidebar from '@/components/Sidebar/Sidebar'
 import FeaturePopup from '@/components/Map/FeaturePopup'
+import SearchBar from '@/components/Map/SearchBar'
 
 const MapContainer = dynamic(() => import('@/components/Map/MapContainer'), {
   ssr: false,
@@ -52,6 +53,9 @@ export default function Home() {
             />
           </svg>
         </button>
+
+        {/* Search bar */}
+        <SearchBar />
 
         {/* Map */}
         <MapContainer />

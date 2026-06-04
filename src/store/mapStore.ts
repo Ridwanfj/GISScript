@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import type { Map as MaplibreMap } from 'maplibre-gl'
 import { LayerKey } from '@/lib/layerConfig'
 
 interface SelectedFeature {
@@ -28,6 +29,11 @@ interface MapStore {
   mapLoaded: boolean
   setMapLoaded: (v: boolean) => void
 
+  // Map instance — allows external components (e.g. SearchBar) to control the camera
+  mapInstance: MaplibreMap | null
+  setMapInstance: (map: MaplibreMap | null) => void
+  flyTo: (center: [number, number], zoom: number) => void
+
   // Dynamic color maps generated at runtime (layerKey -> { propertyValue -> color })
   layerColors: Record<string, Record<string, string>>
   setLayerColors: (layerKey: string, colors: Record<string, string>) => void
@@ -46,7 +52,7 @@ interface MapStore {
   toggleSubFiltersBulk: (layerKey: string, values: string[], enable: boolean) => void
 }
 
-export const useMapStore = create<MapStore>((set) => ({
+export const useMapStore = create<MapStore>((set, get) => ({
   // Awalnya SEMUA layer OFF — user harus mengaktifkan manual
   visibleLayers: new Set<LayerKey>(),
   toggleLayer: (key) =>
@@ -93,6 +99,20 @@ export const useMapStore = create<MapStore>((set) => ({
 
   mapLoaded: false,
   setMapLoaded: (v) => set({ mapLoaded: v }),
+
+  mapInstance: null,
+  setMapInstance: (map) => set({ mapInstance: map }),
+  flyTo: (center, zoom) => {
+    const map = get().mapInstance
+    if (map) {
+      map.flyTo({
+        center,
+        zoom,
+        duration: 1800,
+        essential: true,
+      })
+    }
+  },
 
   layerColors: {},
   setLayerColors: (layerKey, colors) =>

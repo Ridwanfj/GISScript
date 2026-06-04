@@ -14,11 +14,16 @@ const ALLOWED_LAYERS = [
 
 export async function GET(
   _req: Request,
-  { params }: { params: Promise<{ name: string }> }
+  { params }: { params: Promise<{ name: string }> | { name: string } }
 ) {
-  const { name } = await params
+  // Support both Promise (Next 15+) and object (Next < 15)
+  const resolvedParams = await Promise.resolve(params)
+  const name = resolvedParams?.name
 
-  if (!ALLOWED_LAYERS.includes(name)) {
+  console.log(`[API Layer] Received request for name: "${name}"`, { resolvedParams })
+
+  if (!name || !ALLOWED_LAYERS.includes(name)) {
+    console.log(`[API Layer] Name "${name}" not in ALLOWED_LAYERS, returning 404`)
     return NextResponse.json({ error: 'Layer not found' }, { status: 404 })
   }
 
