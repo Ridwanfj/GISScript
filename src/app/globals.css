@@ -4,13 +4,11 @@
   --font-sans: var(--font-inter);
 }
 
-/* Reset for full-viewport map */
+/* Base reset */
 html,
 body {
-  height: 100%;
   margin: 0;
   padding: 0;
-  overflow: hidden;
 }
 
 /* MapLibre overrides for dark theme */
