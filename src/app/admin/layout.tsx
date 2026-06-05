@@ -140,7 +140,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               Lainnya
             </p>
             <Link
-              href="/"
+              href="/map"
               className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
