@@ -45,6 +45,17 @@ export async function PUT(
     const supabase = getSupabase()
     const body = await req.json()
 
+    // Remove any existing geom from body — we compute it from Latitude/Longitude
+    delete body.geom
+
+    // Generate PostGIS geometry from Latitude/Longitude if both are provided
+    const lat = body.Latitude != null && body.Latitude !== '' ? parseFloat(body.Latitude) : null
+    const lng = body.Longitude != null && body.Longitude !== '' ? parseFloat(body.Longitude) : null
+
+    if (lat !== null && lng !== null && !isNaN(lat) && !isNaN(lng)) {
+      body.geom = `SRID=4326;POINT(${lng} ${lat})`
+    }
+
     const { data, error } = await supabase
       .from('koordinat_menengah_dan_besar')
       .update(body)
