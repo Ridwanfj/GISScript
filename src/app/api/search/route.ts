@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server'
 export const dynamic = 'force-dynamic'
 
 interface SearchResult {
-  type: 'kecamatan' | 'kelurahan' | 'proyek'
+  type: 'kecamatan' | 'kelurahan' | 'proyek' | 'ipro'
   name: string
   subtitle?: string
   coordinates: [number, number]
@@ -104,6 +104,60 @@ export async function GET(req: Request) {
           })
           
           if (results.length >= 25) break // Limit results for performance
+        }
+      }
+    }
+
+    // 4. Search IPRO
+    const { data: iproData } = await supabase.rpc('get_layer_geojson', {
+      layer_name: 'ipro',
+    })
+
+    if (iproData?.features) {
+      for (const f of iproData.features) {
+        const props = f.properties || {}
+        const jenisIpro = String(props['JENIS IPRO'] || '')
+        const alamat = String(props['ALAMAT'] || '')
+        const no = String(props['NO'] || '')
+
+        const matches =
+          jenisIpro.toLowerCase().includes(q.toLowerCase()) ||
+          alamat.toLowerCase().includes(q.toLowerCase()) ||
+          no.toLowerCase().includes(q.toLowerCase())
+
+        if (matches) {
+          // Parse coordinates — may be a string "lng lat" or use Latitude/Longitude props
+          let coords: [number, number] | null = null
+          const rawCoords = f.geometry?.coordinates
+          if (typeof rawCoords === 'string') {
+            const parts = rawCoords.trim().split(/\s+/).map(Number)
+            if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+              coords = [parts[0], parts[1]]
+            }
+          } else if (Array.isArray(rawCoords) && rawCoords.length >= 2) {
+            coords = [rawCoords[0], rawCoords[1]]
+          }
+          // Fallback to Longitude/Latitude properties
+          if (!coords) {
+            const lng = parseFloat(String(props['Longitude'] || '0'))
+            const lat = parseFloat(String(props['Latitude'] || '0'))
+            if (lng !== 0 && lat !== 0) {
+              coords = [lng, lat]
+            }
+          }
+
+          if (coords) {
+            results.push({
+              type: 'ipro',
+              name: jenisIpro || `IPRO #${no}`,
+              subtitle: alamat || '-',
+              coordinates: coords,
+              zoom: 17,
+              properties: props,
+            })
+
+            if (results.length >= 30) break
+          }
         }
       }
     }

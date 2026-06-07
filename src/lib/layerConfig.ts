@@ -82,6 +82,20 @@ export const LAYER_CONFIG = {
       { key: 'TKI', label: 'Tenaga Kerja' },
     ],
   },
+  ipro: {
+    label: 'IPRO',
+    tableName: 'ipro',
+    type: 'symbol' as const,
+    color: '#852726',
+    defaultVisible: false,
+    iconImage: '/logo pin-01.svg',
+    popupFields: [
+      { key: 'NO', label: 'No' },
+      { key: 'JENIS IPRO', label: 'Jenis IPRO' },
+      { key: 'ALAMAT', label: 'Alamat' },
+      { key: 'KOORDINAT', label: 'Koordinat' },
+    ],
+  },
 } as const
 
 export type LayerKey = keyof typeof LAYER_CONFIG

@@ -10,6 +10,7 @@ const ALLOWED_LAYERS = [
   'kelurahan',
   'pola_rdtr',
   'koordinat_menengah_dan_besar',
+  'ipro',
 ]
 
 export async function GET(

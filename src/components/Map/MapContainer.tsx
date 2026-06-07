@@ -34,6 +34,9 @@ function getLayerIds(key: LayerKey): string[] {
       'koordinat-kelurahan-labels'
     ]
   }
+  if (key === 'ipro') {
+    return [`${key}-symbols`]
+  }
   if (LAYER_CONFIG[key].type === 'fill') {
     return [`${key}-fill`, `${key}-outline`]
   }
@@ -509,6 +512,101 @@ export default function MapContainer() {
         map.on('mouseleave', `${key}-fill`, () => {
           map.getCanvas().style.cursor = ''
         })
+      } else if (config.type === 'symbol') {
+        // Symbol layer — load custom icon and add as symbol layer
+        const iconImageId = `${key}-icon`
+        const iconUrl = (config as any).iconImage || '/logo pin-01.svg'
+
+        // Fix coordinates: Supabase RPC may return coordinates as strings "lng lat" 
+        // instead of proper [lng, lat] arrays. Also fall back to Longitude/Latitude properties.
+        const fixedFeatures = (data.features || []).map((f: any) => {
+          let coords = f.geometry?.coordinates
+          // Parse string coordinates like "109.1440389 -6.85615"
+          if (typeof coords === 'string') {
+            const parts = coords.trim().split(/\s+/).map(Number)
+            if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+              coords = parts
+            }
+          }
+          // Fallback to Longitude/Latitude properties if coordinates are invalid
+          if (!Array.isArray(coords) || coords.length < 2 || isNaN(coords[0]) || isNaN(coords[1])) {
+            const lng = parseFloat(String(f.properties?.Longitude || '0'))
+            const lat = parseFloat(String(f.properties?.Latitude || '0'))
+            if (lng !== 0 && lat !== 0) {
+              coords = [lng, lat]
+            } else {
+              return null // Skip features with no valid coordinates
+            }
+          }
+          return {
+            ...f,
+            geometry: {
+              type: 'Point',
+              coordinates: coords,
+            },
+          }
+        }).filter(Boolean)
+
+        const fixedData = {
+          type: 'FeatureCollection',
+          features: fixedFeatures,
+        }
+
+        // Load the SVG icon as an image into MapLibre
+        if (!map.hasImage(iconImageId)) {
+          try {
+            const img = new window.Image()
+            img.crossOrigin = 'anonymous'
+            await new Promise<void>((resolve, reject) => {
+              img.onload = () => {
+                // Render at a good size for the map (36px wide, proportional height)
+                const canvas = document.createElement('canvas')
+                const targetWidth = 36
+                const targetHeight = Math.round((img.naturalHeight / img.naturalWidth) * targetWidth)
+                canvas.width = targetWidth
+                canvas.height = targetHeight
+                const ctx = canvas.getContext('2d')!
+                ctx.drawImage(img, 0, 0, targetWidth, targetHeight)
+                const imageData = ctx.getImageData(0, 0, targetWidth, targetHeight)
+                map.addImage(iconImageId, {
+                  width: targetWidth,
+                  height: targetHeight,
+                  data: imageData.data as unknown as Uint8Array,
+                })
+                resolve()
+              }
+              img.onerror = (err) => {
+                console.error(`Failed to load SVG icon: ${iconUrl}`, err)
+                reject(err)
+              }
+              img.src = iconUrl
+            })
+          } catch (err) {
+            console.error(`Failed to load icon for ${key}:`, err)
+          }
+        }
+
+        map.addSource(key, { type: 'geojson', data: fixedData })
+
+        map.addLayer({
+          id: `${key}-symbols`,
+          type: 'symbol',
+          source: key,
+          layout: {
+            'icon-image': iconImageId,
+            'icon-size': 1,
+            'icon-allow-overlap': true,
+            'icon-anchor': 'bottom',
+          },
+        })
+
+        map.on('click', `${key}-symbols`, (e) => handleFeatureClick(key, e))
+        map.on('mouseenter', `${key}-symbols`, () => {
+          map.getCanvas().style.cursor = 'pointer'
+        })
+        map.on('mouseleave', `${key}-symbols`, () => {
+          map.getCanvas().style.cursor = ''
+        })
       }
 
       // Enforce correct stacking order when a layer is newly added
@@ -794,8 +892,11 @@ export default function MapContainer() {
       if (map.getSource(HIGHLIGHT_SOURCE)) map.removeSource(HIGHLIGHT_SOURCE)
     }
 
-    // Only highlight point features (proyek investasi)
-    if (!selectedFeature || selectedFeature.layerKey !== 'koordinat_menengah_dan_besar' || selectedFeature.properties.isAggregate) {
+    // Only highlight point features (proyek investasi and IPRO)
+    const isHighlightable = selectedFeature && 
+      (selectedFeature.layerKey === 'koordinat_menengah_dan_besar' || selectedFeature.layerKey === 'ipro') && 
+      !selectedFeature.properties.isAggregate
+    if (!isHighlightable) {
       cleanupLayers()
       return
     }
