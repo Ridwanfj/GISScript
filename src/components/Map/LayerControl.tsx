@@ -8,6 +8,7 @@ const layerIcons: Record<string, string> = {
   line: '━',
   fill: '◆',
   circle: '●',
+  symbol: '📍',
 }
 
 function toTitleCase(str: string): string {
@@ -24,6 +25,7 @@ const layerOrder: LayerKey[] = [
   'kelurahan',
   'pola_rdtr',
   'koordinat_menengah_dan_besar',
+  'ipro',
 ]
 
 // Kelompokkan zona RDTR berdasarkan kategori

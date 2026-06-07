@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useMapStore } from '@/store/mapStore'
 
 interface SearchResult {
-  type: 'kecamatan' | 'kelurahan' | 'proyek'
+  type: 'kecamatan' | 'kelurahan' | 'proyek' | 'ipro'
   name: string
   subtitle?: string
   coordinates: [number, number]
@@ -19,7 +19,7 @@ const TYPE_META: Record<string, { icon: string; label: string; gradient: string 
     gradient: 'from-blue-500/20 to-blue-600/10',
   },
   kelurahan: {
-    icon: '🏘️',
+    icon: '🏠',
     label: 'Kelurahan',
     gradient: 'from-emerald-500/20 to-emerald-600/10',
   },
@@ -27,6 +27,11 @@ const TYPE_META: Record<string, { icon: string; label: string; gradient: string 
     icon: '📍',
     label: 'Proyek Investasi',
     gradient: 'from-amber-500/20 to-amber-600/10',
+  },
+  ipro: {
+    icon: '📌',
+    label: 'IPRO',
+    gradient: 'from-red-500/20 to-red-600/10',
   },
 }
 
@@ -113,6 +118,15 @@ export default function SearchBar() {
       if (result.type === 'proyek' && result.properties) {
         setSelectedFeature({
           layerKey: 'koordinat_menengah_dan_besar',
+          properties: result.properties,
+          coordinates: result.coordinates,
+        })
+      }
+
+      // If it's IPRO, show the popup
+      if (result.type === 'ipro' && result.properties) {
+        setSelectedFeature({
+          layerKey: 'ipro',
           properties: result.properties,
           coordinates: result.coordinates,
         })
@@ -206,7 +220,7 @@ export default function SearchBar() {
 
   // Build flat list with headers for keyboard nav indexing
   let flatIndex = 0
-  const groupOrder: ('kecamatan' | 'kelurahan' | 'proyek')[] = ['kecamatan', 'kelurahan', 'proyek']
+  const groupOrder: ('kecamatan' | 'kelurahan' | 'proyek' | 'ipro')[] = ['kecamatan', 'kelurahan', 'proyek', 'ipro']
 
   return (
     <div className="absolute top-4 left-16 lg:left-4 z-30 w-[calc(100%-5rem)] sm:w-80 lg:w-96">
@@ -257,7 +271,7 @@ export default function SearchBar() {
             if (results.length > 0) setIsOpen(true)
           }}
           onBlur={() => setIsFocused(false)}
-          placeholder="Cari kecamatan, kelurahan, proyek..."
+          placeholder="Cari kecamatan, kelurahan, proyek, IPRO..."
           className="flex-1 bg-transparent text-sm text-gray-100 placeholder-gray-500 py-3 pr-3 outline-none"
           autoComplete="off"
           spellCheck={false}
