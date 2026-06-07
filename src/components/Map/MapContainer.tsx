@@ -548,7 +548,7 @@ export default function MapContainer() {
         }).filter(Boolean)
 
         const fixedData = {
-          type: 'FeatureCollection',
+          type: 'FeatureCollection' as const,
           features: fixedFeatures,
         }
 
