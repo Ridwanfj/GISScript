@@ -234,7 +234,6 @@ function Hero() {
             FIT Zone{' '}
             <span className="relative inline-block text-sky-700">
               Kota Tegal
-              <span className="absolute -bottom-1 left-0 right-0 h-[8px] bg-amber-300/70 -z-10 rounded-sm" />
             </span>
           </h1>
         </Reveal>
@@ -262,7 +261,6 @@ function Hero() {
             </a>
           </div>
         </Reveal>
-        <HeroBadges />
       </div>
     </section>
   )
@@ -293,7 +291,7 @@ function About() {
     },
   ]
   return (
-    <section id="tentang" className="py-24 sm:py-32 border-t border-gray-100">
+    <section id="tentang" className="pt-20 pb-24 sm:pt-24 sm:pb-32 border-t border-gray-100">
       <div className="max-w-6xl mx-auto px-5 sm:px-8">
         <div className="max-w-2xl">
           <Reveal>
@@ -754,16 +752,32 @@ function HeroBadges() {
       .then((d) => { if (d && !d.error) setStats(d) })
       .catch(() => {})
   }, [])
+
+  const items = [
+    { value: stats?.kecamatan ?? 4, label: 'Kecamatan', icon: MapIcon },
+    { value: stats?.kelurahan ?? 27, label: 'Kelurahan', icon: MapPin },
+    { value: stats?.zona_rdtr ?? '30+', label: 'Zona RDTR', icon: Layers },
+    { value: stats?.proyek_investasi ?? '100+', label: 'Proyek Investasi', icon: Building2 },
+  ]
+
   return (
     <Reveal delay={320}>
-      <div className="mt-10 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs sm:text-sm text-gray-500">
-        <span className="font-medium text-gray-700">{stats?.kecamatan ?? 4} Kecamatan</span>
-        <Dot />
-        <span className="font-medium text-gray-700">{stats?.kelurahan ?? 27} Kelurahan</span>
-        <Dot />
-        <span className="font-medium text-gray-700">{stats?.zona_rdtr ?? '30+'} Zona RDTR</span>
-        <Dot />
-        <span className="font-medium text-gray-700">{stats?.proyek_investasi ?? '100+'} Proyek Investasi</span>
+      <div className="relative z-20 -mt-14 mb-0 px-5 sm:px-8">
+        <div className="max-w-5xl mx-auto bg-white border border-sky-100 rounded-2xl shadow-xl px-8 py-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {items.map((item) => (
+            <div key={item.label} className="flex items-center gap-3 px-2 py-2">
+              <item.icon className="w-11 h-11 text-sky-600 shrink-0" />
+              <div>
+                <div className="text-xl sm:text-2xl font-bold tracking-tight text-gray-900">
+                  {item.value}
+                </div>
+                <div className="text-xs text-gray-500 font-medium">
+                  {item.label}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </Reveal>
   )
@@ -790,6 +804,7 @@ export default function Landing() {
     <div className="min-h-screen bg-white text-gray-900 antialiased">
       <Nav />
       <Hero />
+      <HeroBadges />
       <About />
       <Features />
       <MapPreview />
