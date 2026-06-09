@@ -25,6 +25,26 @@ const navItems = [
       </svg>
     ),
   },
+  {
+    label: 'Data IPRO',
+    href: '/admin/ipro',
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+      </svg>
+    ),
+  },
+  {
+    label: 'Visibilitas Field',
+    href: '/admin/visibility',
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      </svg>
+    ),
+  },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -85,15 +105,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="h-16 flex items-center justify-between px-5 border-b border-gray-200">
           <Link href="/admin" className="flex items-center gap-2.5">
             <Image
-              src="/logo.png"
-              alt="Logo Kota Tegal"
-              width={32}
-              height={32}
+              src="/logo.svg"
+              alt="Logo FIT Zone"
+              width={45}
+              height={45}
               className="object-contain"
             />
             <div>
               <p className="text-sm font-semibold text-gray-900 leading-tight">Admin</p>
-              <p className="text-[11px] text-gray-500 leading-tight">WebGIS Kota Tegal</p>
+              <p className="text-[11px] text-gray-500 leading-tight">FIT Zone</p>
             </div>
           </Link>
           <button
