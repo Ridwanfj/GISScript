@@ -70,10 +70,12 @@ export default function InvestasiForm({ id }: InvestasiFormProps) {
         const val = data[key]
         if (val == null) {
           cleaned[key] = ''
-        } else if (key === 'Jumlah Investasi' || key === 'TKI' || key === 'Latitude' || key === 'Longitude' || key === 'luas_tanah') {
-          // Numeric fields: clean formatted strings (e.g. "1.500.000") to raw number string
+        } else if (key === 'Latitude' || key === 'Longitude' || key === 'luas_tanah') {
+          // Coordinate/decimal fields: keep as-is (dot is decimal separator)
+          cleaned[key] = String(val)
+        } else if (key === 'Jumlah Investasi' || key === 'TKI') {
+          // Currency/integer fields: clean formatted strings (e.g. "1.500.000") to raw number
           const numStr = String(val)
-          // Remove thousand separators (dot), keep decimal (comma → dot)
           const rawNum = numStr.replace(/\./g, '').replace(/,/g, '.')
           const parsed = parseFloat(rawNum)
           cleaned[key] = !isNaN(parsed) ? String(parsed) : numStr
