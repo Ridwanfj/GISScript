@@ -24,10 +24,8 @@ export default function IproForm({ id }: IproFormProps) {
     'JENIS IPRO': '',
     'ALAMAT': '',
     'KOORDINAT': '',
-    'KECAMATAN': '',
-    'KELURAHAN': '',
-    'PEMILIK': '',
-    'STATUS': '',
+    'Latitude': '',
+    'Longitude': '',
   })
 
   const [loading, setLoading] = useState(isEdit)
@@ -57,10 +55,8 @@ export default function IproForm({ id }: IproFormProps) {
         'JENIS IPRO': data['JENIS IPRO'] ?? '',
         'ALAMAT': data['ALAMAT'] ?? '',
         'KOORDINAT': data['KOORDINAT'] ?? '',
-        'KECAMATAN': data['KECAMATAN'] ?? '',
-        'KELURAHAN': data['KELURAHAN'] ?? '',
-        'PEMILIK': data['PEMILIK'] ?? '',
-        'STATUS': data['STATUS'] ?? '',
+        'Latitude': data['Latitude'] != null ? String(data['Latitude']) : '',
+        'Longitude': data['Longitude'] != null ? String(data['Longitude']) : '',
       })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Terjadi kesalahan')
@@ -70,7 +66,7 @@ export default function IproForm({ id }: IproFormProps) {
   }
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
@@ -87,11 +83,15 @@ export default function IproForm({ id }: IproFormProps) {
 
       const submitData: Record<string, any> = { ...formData }
 
+      // Convert Latitude/Longitude to numbers or null
+      const latStr = String(submitData['Latitude'] ?? '').trim()
+      const lngStr = String(submitData['Longitude'] ?? '').trim()
+      submitData['Latitude'] = latStr !== '' ? parseFloat(latStr) : null
+      submitData['Longitude'] = lngStr !== '' ? parseFloat(lngStr) : null
+
       // Clean empty optional fields → null
-      const optionalFields = ['NO', 'KOORDINAT', 'KECAMATAN', 'KELURAHAN', 'PEMILIK', 'STATUS']
-      for (const key of optionalFields) {
-        if (submitData[key] === '') submitData[key] = null
-      }
+      if (submitData['NO'] === '') submitData['NO'] = null
+      if (submitData['KOORDINAT'] === '') submitData['KOORDINAT'] = null
 
       const res = await fetch(
         isEdit ? `/api/admin/ipro/${id}` : '/api/admin/ipro',
@@ -197,32 +197,6 @@ export default function IproForm({ id }: IproFormProps) {
                   className={inputClass}
                 />
               </div>
-
-              <div className="space-y-2">
-                <label htmlFor="pemilik" className={labelClass}>Pemilik</label>
-                <input
-                  type="text"
-                  id="pemilik"
-                  name="PEMILIK"
-                  value={formData['PEMILIK']}
-                  onChange={handleChange}
-                  placeholder="Nama pemilik"
-                  className={inputClass}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="status" className={labelClass}>Status</label>
-                <input
-                  type="text"
-                  id="status"
-                  name="STATUS"
-                  value={formData['STATUS']}
-                  onChange={handleChange}
-                  placeholder="Contoh: Aktif, Non-Aktif"
-                  className={inputClass}
-                />
-              </div>
             </div>
           </div>
 
@@ -252,36 +226,9 @@ export default function IproForm({ id }: IproFormProps) {
                 />
               </div>
 
-              <div className="space-y-2">
-                <label htmlFor="kecamatan" className={labelClass}>Kecamatan</label>
-                <input
-                  type="text"
-                  id="kecamatan"
-                  name="KECAMATAN"
-                  value={formData['KECAMATAN']}
-                  onChange={handleChange}
-                  placeholder="Nama kecamatan"
-                  className={inputClass}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="kelurahan" className={labelClass}>Kelurahan</label>
-                <input
-                  type="text"
-                  id="kelurahan"
-                  name="KELURAHAN"
-                  value={formData['KELURAHAN']}
-                  onChange={handleChange}
-                  placeholder="Nama kelurahan"
-                  className={inputClass}
-                />
-              </div>
-
               <div className="md:col-span-2 space-y-2">
                 <label htmlFor="koordinat" className={labelClass}>
-                  Koordinat
-                  <span className="text-gray-400 font-normal normal-case ml-1">(lat, lng)</span>
+                  Koordinat (teks)
                 </label>
                 <input
                   type="text"
@@ -292,7 +239,45 @@ export default function IproForm({ id }: IproFormProps) {
                   placeholder="Contoh: -6.879704, 109.143593"
                   className={`${inputClass} font-mono`}
                 />
-                <p className="text-xs text-gray-400">Format: latitude, longitude. Titik akan muncul di peta jika diisi.</p>
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="latitude" className={labelClass}>Latitude</label>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  id="latitude"
+                  name="Latitude"
+                  value={formData['Latitude']}
+                  onChange={handleChange}
+                  placeholder="Contoh: -6.879704"
+                  className={`${inputClass} font-mono`}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="longitude" className={labelClass}>Longitude</label>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  id="longitude"
+                  name="Longitude"
+                  value={formData['Longitude']}
+                  onChange={handleChange}
+                  placeholder="Contoh: 109.143593"
+                  className={`${inputClass} font-mono`}
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <div className="flex items-start gap-2.5 p-3 rounded-lg bg-sky-50 border border-sky-100">
+                  <svg className="w-4 h-4 text-sky-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                  </svg>
+                  <p className="text-xs text-sky-700">
+                    Jika Latitude dan Longitude diisi, titik akan otomatis muncul di peta.
+                  </p>
+                </div>
               </div>
             </div>
           </div>

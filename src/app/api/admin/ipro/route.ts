@@ -64,18 +64,14 @@ export async function POST(req: Request) {
     const supabase = getSupabase()
     const body = await req.json()
 
-    // Remove geom — compute from KOORDINAT if provided
+    // Remove geom — compute from Latitude/Longitude if provided
     delete body.geom
 
-    // Parse KOORDINAT field (format: "lat, lng" or "lat,lng")
-    const koordinatStr = String(body['KOORDINAT'] || '').trim()
-    if (koordinatStr) {
-      const parts = koordinatStr.split(',').map((s: string) => parseFloat(s.trim()))
-      if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-        const lat = parts[0]
-        const lng = parts[1]
-        body.geom = `SRID=4326;POINT(${lng} ${lat})`
-      }
+    const lat = body.Latitude != null && body.Latitude !== '' ? parseFloat(body.Latitude) : null
+    const lng = body.Longitude != null && body.Longitude !== '' ? parseFloat(body.Longitude) : null
+
+    if (lat !== null && lng !== null && !isNaN(lat) && !isNaN(lng)) {
+      body.geom = `SRID=4326;POINT(${lng} ${lat})`
     }
 
     const { data, error } = await supabase

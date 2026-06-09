@@ -10,10 +10,8 @@ interface IproItem {
   'JENIS IPRO': string
   'ALAMAT': string
   'KOORDINAT': string
-  'KECAMATAN': string
-  'KELURAHAN': string
-  'PEMILIK': string
-  'STATUS': string
+  'Latitude': number | null
+  'Longitude': number | null
   [key: string]: any
 }
 
@@ -115,7 +113,7 @@ export default function AdminIproPage() {
         </svg>
         <input
           type="text"
-          placeholder="Cari jenis IPRO, alamat, atau pemilik..."
+          placeholder="Cari jenis IPRO atau alamat..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full h-10 rounded-md border border-gray-300 bg-white pl-9 pr-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
@@ -138,7 +136,7 @@ export default function AdminIproPage() {
                 <th className="px-4 py-3">No</th>
                 <th className="px-4 py-3">Jenis IPRO</th>
                 <th className="px-4 py-3">Alamat</th>
-                <th className="px-4 py-3">Kecamatan</th>
+                <th className="px-4 py-3">Koordinat</th>
                 <th className="px-4 py-3 text-right">Aksi</th>
               </tr>
             </thead>
@@ -165,14 +163,18 @@ export default function AdminIproPage() {
                     <td className="px-4 py-3 text-gray-600">{item['NO']}</td>
                     <td className="px-4 py-3">
                       <div className="font-medium text-gray-900">{item['JENIS IPRO']}</div>
-                      <div className="text-xs text-gray-500 mt-0.5">{item['PEMILIK']}</div>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="text-gray-900 line-clamp-2 max-w-[200px]">{item['ALAMAT']}</div>
+                      <div className="text-gray-900 line-clamp-2 max-w-[250px]">{item['ALAMAT']}</div>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="text-gray-900">{item['KECAMATAN']}</div>
-                      <div className="text-xs text-gray-500 mt-0.5">{item['KELURAHAN']}</div>
+                      {item['Latitude'] && item['Longitude'] ? (
+                        <span className="text-xs font-mono text-gray-500">
+                          {item['Latitude']}, {item['Longitude']}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-400">—</span>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1">
