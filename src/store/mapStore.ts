@@ -52,6 +52,15 @@ interface MapStore {
   disabledSubFilters: Set<string>
   toggleSubFilter: (layerKey: string, value: string) => void
   toggleSubFiltersBulk: (layerKey: string, values: string[], enable: boolean) => void
+
+  // Field visibility control — fields hidden from public popup view
+  // layerKey -> array of field_keys that are hidden for public
+  hiddenFields: Record<string, string[]>
+  setHiddenFields: (hiddenFields: Record<string, string[]>) => void
+
+  // Whether current user is admin (controls popup field visibility)
+  isAdmin: boolean
+  setIsAdmin: (v: boolean) => void
 }
 
 export const useMapStore = create<MapStore>((set, get) => ({
@@ -167,4 +176,10 @@ export const useMapStore = create<MapStore>((set, get) => ({
       }
       return { disabledSubFilters: next }
     }),
+
+  hiddenFields: {},
+  setHiddenFields: (hiddenFields) => set({ hiddenFields }),
+
+  isAdmin: false,
+  setIsAdmin: (v) => set({ isAdmin: v }),
 }))

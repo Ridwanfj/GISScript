@@ -16,22 +16,22 @@ const TYPE_META: Record<string, { icon: string; label: string; gradient: string 
   kecamatan: {
     icon: '🏛️',
     label: 'Kecamatan',
-    gradient: 'from-blue-500/20 to-blue-600/10',
+    gradient: 'from-sky-50 to-sky-100/50',
   },
   kelurahan: {
     icon: '🏠',
     label: 'Kelurahan',
-    gradient: 'from-emerald-500/20 to-emerald-600/10',
+    gradient: 'from-emerald-50 to-emerald-100/50',
   },
   proyek: {
     icon: '📍',
     label: 'Proyek Investasi',
-    gradient: 'from-amber-500/20 to-amber-600/10',
+    gradient: 'from-amber-50 to-amber-100/50',
   },
   ipro: {
     icon: '📌',
     label: 'IPRO',
-    gradient: 'from-red-500/20 to-red-600/10',
+    gradient: 'from-red-50 to-red-100/50',
   },
 }
 
@@ -228,19 +228,19 @@ export default function SearchBar() {
       <div
         className={`
           relative flex items-center rounded-2xl
-          bg-gray-900/90 backdrop-blur-xl border
-          shadow-xl shadow-black/30
+          bg-white/95 backdrop-blur-xl border
+          shadow-lg shadow-black/10
           transition-all duration-300 ease-out
           ${isFocused
-            ? 'border-blue-500/60 ring-2 ring-blue-500/20 shadow-blue-900/20'
-            : 'border-gray-700/50 hover:border-gray-600/50'
+            ? 'border-sky-400 ring-2 ring-sky-200/50 shadow-sky-100/30'
+            : 'border-gray-200 hover:border-gray-300'
           }
         `}
       >
         {/* Search icon */}
         <div className="pl-4 pr-2 flex items-center justify-center text-gray-400 shrink-0">
           {isLoading ? (
-            <div className="w-4.5 h-4.5 rounded-full border-2 border-gray-600 border-t-blue-400 animate-spin" />
+            <div className="w-4.5 h-4.5 rounded-full border-2 border-gray-300 border-t-sky-500 animate-spin" />
           ) : (
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -272,7 +272,7 @@ export default function SearchBar() {
           }}
           onBlur={() => setIsFocused(false)}
           placeholder="Cari kecamatan, kelurahan, proyek, IPRO..."
-          className="flex-1 bg-transparent text-sm text-gray-100 placeholder-gray-500 py-3 pr-3 outline-none"
+          className="flex-1 bg-transparent text-sm text-gray-800 placeholder-gray-400 py-3 pr-3 outline-none"
           autoComplete="off"
           spellCheck={false}
         />
@@ -286,7 +286,7 @@ export default function SearchBar() {
               setIsOpen(false)
               inputRef.current?.focus()
             }}
-            className="pr-3.5 pl-1 flex items-center justify-center text-gray-500 hover:text-gray-300 transition-colors cursor-pointer"
+            className="pr-3.5 pl-1 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
             aria-label="Hapus pencarian"
           >
             <svg
@@ -309,7 +309,7 @@ export default function SearchBar() {
       {isOpen && (
         <div
           ref={dropdownRef}
-          className="mt-2 rounded-2xl bg-gray-900/95 backdrop-blur-xl border border-gray-700/50 shadow-2xl shadow-black/50 max-h-80 overflow-y-auto scrollbar-thin animate-in"
+          className="mt-2 rounded-2xl bg-white/95 backdrop-blur-xl border border-gray-200 shadow-xl shadow-black/10 max-h-80 overflow-y-auto scrollbar-thin animate-in"
           style={{
             animation: 'searchDropdownIn 200ms ease-out',
           }}
@@ -317,8 +317,8 @@ export default function SearchBar() {
           {results.length === 0 && !isLoading ? (
             <div className="px-5 py-6 text-center">
               <div className="text-2xl mb-2">🔍</div>
-              <p className="text-sm text-gray-400">Tidak ada hasil</p>
-              <p className="text-xs text-gray-600 mt-1">
+              <p className="text-sm text-gray-500">Tidak ada hasil</p>
+              <p className="text-xs text-gray-400 mt-1">
                 Coba kata kunci lain
               </p>
             </div>
@@ -332,11 +332,11 @@ export default function SearchBar() {
                 return (
                   <div key={type}>
                     {/* Group header */}
-                    <div className={`px-4 py-2 bg-gradient-to-r ${meta.gradient} border-b border-gray-800/40`}>
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                    <div className={`px-4 py-2 bg-gradient-to-r ${meta.gradient} border-b border-gray-100`}>
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-gray-600">
                         {meta.icon} {meta.label}
                       </span>
-                      <span className="ml-2 text-[10px] text-gray-600">
+                      <span className="ml-2 text-[10px] text-gray-400">
                         {items.length} hasil
                       </span>
                     </div>
@@ -354,8 +354,8 @@ export default function SearchBar() {
                             w-full text-left px-4 py-2.5 flex items-start gap-3
                             transition-all duration-150 cursor-pointer
                             ${activeIndex === idx
-                              ? 'bg-blue-600/15 border-l-2 border-blue-500'
-                              : 'border-l-2 border-transparent hover:bg-gray-800/50'
+                              ? 'bg-sky-50 border-l-2 border-sky-500'
+                              : 'border-l-2 border-transparent hover:bg-gray-50'
                             }
                           `}
                         >
@@ -366,14 +366,14 @@ export default function SearchBar() {
                             <p
                               className={`text-sm font-medium truncate ${
                                 activeIndex === idx
-                                  ? 'text-blue-300'
-                                  : 'text-gray-200'
+                                  ? 'text-sky-700'
+                                  : 'text-gray-800'
                               }`}
                             >
                               {result.name}
                             </p>
                             {result.subtitle && (
-                              <p className="text-xs text-gray-500 truncate mt-0.5">
+                              <p className="text-xs text-gray-400 truncate mt-0.5">
                                 {result.subtitle}
                               </p>
                             )}
@@ -382,8 +382,8 @@ export default function SearchBar() {
                             xmlns="http://www.w3.org/2000/svg"
                             className={`w-3.5 h-3.5 mt-1 shrink-0 transition-opacity ${
                               activeIndex === idx
-                                ? 'text-blue-400 opacity-100'
-                                : 'text-gray-600 opacity-0'
+                                ? 'text-sky-500 opacity-100'
+                                : 'text-gray-300 opacity-0'
                             }`}
                             fill="none"
                             viewBox="0 0 24 24"
@@ -407,17 +407,17 @@ export default function SearchBar() {
 
           {/* Keyboard hint */}
           {results.length > 0 && (
-            <div className="px-4 py-2 border-t border-gray-800/40 flex items-center gap-3">
-              <span className="text-[10px] text-gray-600 flex items-center gap-1">
-                <kbd className="px-1 py-0.5 rounded bg-gray-800 text-gray-500 text-[9px] font-mono">↑↓</kbd>
+            <div className="px-4 py-2 border-t border-gray-100 flex items-center gap-3">
+              <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                <kbd className="px-1 py-0.5 rounded bg-gray-100 text-gray-500 text-[9px] font-mono">↑↓</kbd>
                 navigasi
               </span>
-              <span className="text-[10px] text-gray-600 flex items-center gap-1">
-                <kbd className="px-1 py-0.5 rounded bg-gray-800 text-gray-500 text-[9px] font-mono">↵</kbd>
+              <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                <kbd className="px-1 py-0.5 rounded bg-gray-100 text-gray-500 text-[9px] font-mono">↵</kbd>
                 pilih
               </span>
-              <span className="text-[10px] text-gray-600 flex items-center gap-1">
-                <kbd className="px-1.5 py-0.5 rounded bg-gray-800 text-gray-500 text-[9px] font-mono">esc</kbd>
+              <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                <kbd className="px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 text-[9px] font-mono">esc</kbd>
                 tutup
               </span>
             </div>

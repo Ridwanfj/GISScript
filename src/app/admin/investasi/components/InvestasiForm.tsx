@@ -252,7 +252,7 @@ export default function InvestasiForm({ id }: InvestasiFormProps) {
               {/* Nama Proyek */}
               <div className="md:col-span-2 space-y-2">
                 <label htmlFor="nama_proyek" className={labelClass}>
-                  Nama Proyek <span className="text-red-400">*</span>
+                  Nama Proyek/Pemilik <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="text"

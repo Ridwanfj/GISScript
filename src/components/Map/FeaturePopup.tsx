@@ -1,7 +1,9 @@
 'use client'
 
+import { useEffect } from 'react'
 import { useMapStore } from '@/store/mapStore'
 import { LAYER_CONFIG, LayerKey } from '@/lib/layerConfig'
+import { useAuth } from '@/hooks/useAuth'
 
 function formatValue(key: string, value: unknown): string {
   if (value === null || value === undefined) return '-'
@@ -36,25 +38,43 @@ function formatValue(key: string, value: unknown): string {
 }
 
 export default function FeaturePopup() {
-  const { selectedFeature, setSelectedFeature } = useMapStore()
+  const { selectedFeature, setSelectedFeature, hiddenFields, isAdmin, setHiddenFields, setIsAdmin } = useMapStore()
+  const { user } = useAuth()
+
+  // Sync admin status to store
+  useEffect(() => {
+    setIsAdmin(!!user)
+  }, [user, setIsAdmin])
+
+  // Fetch hidden fields config on mount
+  useEffect(() => {
+    fetch('/api/field-visibility')
+      .then((r) => r.ok ? r.json() : { hiddenFields: {} })
+      .then((data) => {
+        if (data.hiddenFields) {
+          setHiddenFields(data.hiddenFields)
+        }
+      })
+      .catch(() => {})
+  }, [setHiddenFields])
 
   if (!selectedFeature) return null
 
   if (selectedFeature.properties.isAggregate) {
     const { level, nama_wilayah, jumlah_proyek, total_investasi } = selectedFeature.properties as any
     return (
-      <div className="absolute bottom-6 right-6 z-50 w-80 max-h-[70vh] overflow-y-auto rounded-2xl bg-gray-900/95 backdrop-blur-xl border border-gray-700/50 shadow-2xl shadow-black/40">
+      <div className="absolute bottom-6 right-6 z-50 w-80 max-h-[70vh] overflow-y-auto rounded-2xl bg-white/95 backdrop-blur-xl border border-gray-200 shadow-xl shadow-black/10">
         {/* Header */}
-        <div className="sticky top-0 flex items-center justify-between px-5 py-4 bg-gradient-to-r from-blue-600/20 to-purple-600/20 border-b border-gray-700/50 rounded-t-2xl">
+        <div className="sticky top-0 flex items-center justify-between px-5 py-4 bg-gradient-to-r from-sky-50 to-sky-100/50 border-b border-gray-200 rounded-t-2xl">
           <div className="flex items-center gap-2.5">
-            <div className="w-3 h-3 rounded-full bg-amber-500 ring-2 ring-white/20" />
-            <h3 className="text-sm font-semibold text-white tracking-wide">
+            <div className="w-3 h-3 rounded-full bg-amber-500 ring-2 ring-amber-200" />
+            <h3 className="text-sm font-semibold text-gray-900 tracking-wide">
               Ringkasan {level === 'kecamatan' ? 'Kecamatan' : 'Kelurahan'}
             </h3>
           </div>
           <button
             onClick={() => setSelectedFeature(null)}
-            className="flex items-center justify-center w-7 h-7 rounded-lg bg-gray-800/80 text-gray-400 hover:text-white hover:bg-gray-700 transition-all duration-200 cursor-pointer"
+            className="flex items-center justify-center w-7 h-7 rounded-lg bg-gray-100 text-gray-500 hover:text-gray-900 hover:bg-gray-200 transition-all duration-200 cursor-pointer"
             aria-label="Tutup popup"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
@@ -65,25 +85,25 @@ export default function FeaturePopup() {
 
         {/* Content */}
         <div className="px-5 py-4 space-y-2.5">
-          <div className="flex justify-between items-start gap-3 py-1.5 border-b border-gray-800/60">
-            <span className="text-xs font-medium text-gray-400 uppercase tracking-wider shrink-0">Nama Wilayah</span>
-            <span className="text-sm text-gray-100 text-right leading-snug">{nama_wilayah}</span>
+          <div className="flex justify-between items-start gap-3 py-1.5 border-b border-gray-100">
+            <span className="text-xs font-medium text-gray-500 uppercase tracking-wider shrink-0">Nama Wilayah</span>
+            <span className="text-sm text-gray-900 text-right leading-snug">{nama_wilayah}</span>
           </div>
-          <div className="flex justify-between items-start gap-3 py-1.5 border-b border-gray-800/60">
-            <span className="text-xs font-medium text-gray-400 uppercase tracking-wider shrink-0">Jumlah Proyek</span>
-            <span className="text-sm text-gray-100 text-right leading-snug">{jumlah_proyek} Proyek</span>
+          <div className="flex justify-between items-start gap-3 py-1.5 border-b border-gray-100">
+            <span className="text-xs font-medium text-gray-500 uppercase tracking-wider shrink-0">Jumlah Proyek</span>
+            <span className="text-sm text-gray-900 text-right leading-snug">{jumlah_proyek} Proyek</span>
           </div>
           <div className="flex justify-between items-start gap-3 py-1.5 last:border-b-0">
-            <span className="text-xs font-medium text-gray-400 uppercase tracking-wider shrink-0">Total Investasi</span>
-            <span className="text-sm text-green-400 text-right leading-snug">
+            <span className="text-xs font-medium text-gray-500 uppercase tracking-wider shrink-0">Total Investasi</span>
+            <span className="text-sm text-emerald-600 font-medium text-right leading-snug">
               {formatValue('Jumlah Investasi', total_investasi)}
             </span>
           </div>
         </div>
 
         {/* Koordinat */}
-        <div className="px-5 py-3 border-t border-gray-800/60">
-          <p className="text-[10px] font-mono text-gray-500">
+        <div className="px-5 py-3 border-t border-gray-100">
+          <p className="text-[10px] font-mono text-gray-400">
             {selectedFeature.coordinates[1].toFixed(6)}, {selectedFeature.coordinates[0].toFixed(6)}
           </p>
         </div>
@@ -93,25 +113,36 @@ export default function FeaturePopup() {
 
   const config = LAYER_CONFIG[selectedFeature.layerKey]
 
+  // Filter popup fields based on admin status and hidden fields config
+  const layerHiddenFields = hiddenFields[selectedFeature.layerKey] || []
+  const visiblePopupFields = isAdmin
+    ? config.popupFields // Admin sees everything
+    : config.popupFields.filter((field) => !layerHiddenFields.includes(field.key))
+
   return (
-    <div className="absolute bottom-6 right-6 z-50 w-80 max-h-[70vh] overflow-y-auto rounded-2xl bg-gray-900/95 backdrop-blur-xl border border-gray-700/50 shadow-2xl shadow-black/40">
+    <div className="absolute bottom-6 right-6 z-50 w-80 max-h-[70vh] overflow-y-auto rounded-2xl bg-white/95 backdrop-blur-xl border border-gray-200 shadow-xl shadow-black/10">
       {/* Header */}
-      <div className="sticky top-0 flex items-center justify-between px-5 py-4 bg-gradient-to-r from-blue-600/20 to-purple-600/20 border-b border-gray-700/50 rounded-t-2xl">
+      <div className="sticky top-0 flex items-center justify-between px-5 py-4 bg-gradient-to-r from-sky-50 to-sky-100/50 border-b border-gray-200 rounded-t-2xl">
         <div className="flex items-center gap-2.5">
           <div
-            className="w-3 h-3 rounded-full ring-2 ring-white/20"
+            className="w-3 h-3 rounded-full ring-2 ring-white/60"
             style={{
               backgroundColor:
-                'color' in config ? config.color : '#3b82f6',
+                'color' in config ? config.color : '#0284c7',
             }}
           />
-          <h3 className="text-sm font-semibold text-white tracking-wide">
+          <h3 className="text-sm font-semibold text-gray-900 tracking-wide">
             {config.label}
           </h3>
+          {isAdmin && (
+            <span className="text-[9px] font-medium text-sky-600 bg-sky-100 px-1.5 py-0.5 rounded">
+              ADMIN
+            </span>
+          )}
         </div>
         <button
           onClick={() => setSelectedFeature(null)}
-          className="flex items-center justify-center w-7 h-7 rounded-lg bg-gray-800/80 text-gray-400 hover:text-white hover:bg-gray-700 transition-all duration-200 cursor-pointer"
+          className="flex items-center justify-center w-7 h-7 rounded-lg bg-gray-100 text-gray-500 hover:text-gray-900 hover:bg-gray-200 transition-all duration-200 cursor-pointer"
           aria-label="Tutup popup"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
@@ -122,27 +153,34 @@ export default function FeaturePopup() {
 
       {/* Content */}
       <div className="px-5 py-4 space-y-2.5">
-        {config.popupFields.map((field) => {
+        {visiblePopupFields.map((field) => {
           const value = selectedFeature.properties[field.key]
           return (
             <div
               key={field.key}
-              className="flex justify-between items-start gap-3 py-1.5 border-b border-gray-800/60 last:border-b-0"
+              className="flex justify-between items-start gap-3 py-1.5 border-b border-gray-100 last:border-b-0"
             >
-              <span className="text-xs font-medium text-gray-400 uppercase tracking-wider shrink-0">
+              <span className="text-xs font-medium text-gray-500 uppercase tracking-wider shrink-0">
                 {field.label}
               </span>
-              <span className="text-sm text-gray-100 text-right leading-snug">
+              <span className="text-sm text-gray-900 text-right leading-snug">
                 {formatValue(field.key, value)}
               </span>
             </div>
           )
         })}
+        {!isAdmin && layerHiddenFields.length > 0 && (
+          <div className="pt-2 mt-2 border-t border-gray-100">
+            <p className="text-[10px] text-gray-400 italic">
+              Beberapa informasi detail disembunyikan untuk publik.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Koordinat */}
-      <div className="px-5 py-3 border-t border-gray-800/60">
-        <p className="text-[10px] font-mono text-gray-500">
+      <div className="px-5 py-3 border-t border-gray-100">
+        <p className="text-[10px] font-mono text-gray-400">
           {selectedFeature.coordinates[1].toFixed(6)}, {selectedFeature.coordinates[0].toFixed(6)}
         </p>
       </div>

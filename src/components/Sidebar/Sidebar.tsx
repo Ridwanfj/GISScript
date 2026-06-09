@@ -14,7 +14,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       {/* Overlay for mobile */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/30 z-40 lg:hidden"
           onClick={onClose}
         />
       )}
@@ -23,38 +23,38 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       <aside
         className={`
           fixed top-0 left-0 z-50 h-full w-72
-          bg-gray-950/95 backdrop-blur-2xl border-r border-gray-800/50
+          bg-white/95 backdrop-blur-2xl border-r border-gray-200
           transform transition-transform duration-300 ease-in-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
           lg:translate-x-0 lg:relative lg:z-auto
-          flex flex-col
+          flex flex-col shadow-lg
         `}
       >
         {/* Header */}
-        <div className="px-5 py-5 border-b border-gray-800/50">
+        <div className="px-5 py-5 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              {/* Map icon */}
+              {/* Logo */}
               <div className="flex items-center justify-center w-10 h-10 shrink-0">
                 <Image
-                  src="/logo.png"
+                  src="/logo.svg"
                   alt="Logo Kota Tegal"
                   width={40}
                   height={40}
-                  className="object-contain drop-shadow-md"
+                  className="object-contain"
                 />
               </div>
               <div>
-                <h1 className="text-base font-bold text-white tracking-tight">
-                  WebGIS
+                <h1 className="text-base font-bold text-gray-900 tracking-tight">
+                  FIT Zone
                 </h1>
-                <p className="text-xs text-gray-400 font-medium">Kota Tegal</p>
+                <p className="text-xs text-gray-500 font-medium">Kota Tegal</p>
               </div>
             </div>
             {/* Close button - mobile only */}
             <button
               onClick={onClose}
-              className="lg:hidden flex items-center justify-center w-8 h-8 rounded-lg bg-gray-800/80 text-gray-400 hover:text-white hover:bg-gray-700 transition-colors cursor-pointer"
+              className="lg:hidden flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 text-gray-500 hover:text-gray-900 hover:bg-gray-200 transition-colors cursor-pointer"
               aria-label="Tutup sidebar"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
@@ -68,7 +68,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6 scrollbar-thin">
           {/* Layer toggles */}
           <div>
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400 px-1 mb-3">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-sky-600 px-1 mb-3">
               Layer Peta & Legenda
             </h2>
             <LayerControl />
@@ -76,8 +76,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3.5 border-t border-gray-800/50">
-          <p className="text-[10px] text-gray-600 text-center">
+        <div className="px-5 py-3.5 border-t border-gray-200">
+          <p className="text-[10px] text-gray-400 text-center">
             © 2025 Pemerintah Kota Tegal
           </p>
         </div>

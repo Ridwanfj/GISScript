@@ -9,12 +9,12 @@ import SearchBar from '@/components/Map/SearchBar'
 const MapContainer = dynamic(() => import('@/components/Map/MapContainer'), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full flex items-center justify-center bg-gray-950">
+    <div className="w-full h-full flex items-center justify-center bg-white">
       <div className="flex flex-col items-center gap-4">
         <div className="relative">
-          <div className="w-12 h-12 rounded-full border-4 border-gray-800 border-t-blue-500 animate-spin" />
+          <div className="w-12 h-12 rounded-full border-4 border-gray-200 border-t-sky-500 animate-spin" />
         </div>
-        <p className="text-sm text-gray-400 font-medium animate-pulse">
+        <p className="text-sm text-gray-500 font-medium animate-pulse">
           Memuat peta...
         </p>
       </div>
@@ -26,7 +26,7 @@ export default function MapPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-gray-950">
+    <div className="flex h-screen w-screen overflow-hidden bg-white">
       {/* Sidebar */}
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
@@ -35,7 +35,7 @@ export default function MapPage() {
         {/* Hamburger menu button - mobile */}
         <button
           onClick={() => setSidebarOpen(true)}
-          className="absolute top-4 left-4 z-30 lg:hidden flex items-center justify-center w-11 h-11 rounded-xl bg-gray-900/90 backdrop-blur-lg border border-gray-700/50 text-white shadow-xl hover:bg-gray-800 transition-all duration-200 cursor-pointer"
+          className="absolute top-4 left-4 z-30 lg:hidden flex items-center justify-center w-11 h-11 rounded-xl bg-white/95 backdrop-blur-lg border border-gray-200 text-gray-700 shadow-lg hover:bg-gray-50 transition-all duration-200 cursor-pointer"
           aria-label="Buka menu"
         >
           <svg

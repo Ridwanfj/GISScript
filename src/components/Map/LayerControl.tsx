@@ -96,7 +96,7 @@ const ZONE_GROUPS: { title: string; keys: string[] }[] = [
 function Spinner() {
   return (
     <svg
-      className="animate-spin w-4 h-4 text-blue-400"
+      className="animate-spin w-4 h-4 text-sky-500"
       xmlns="http://www.w3.org/2000/svg"
       fill="none"
       viewBox="0 0 24 24"
@@ -149,7 +149,7 @@ function LegendSection({
 
   return (
     <div className="w-full">
-      <div className="flex items-center gap-1 w-full hover:bg-white/5 rounded-lg px-1 transition-colors">
+      <div className="flex items-center gap-1 w-full hover:bg-gray-50 rounded-lg px-1 transition-colors">
         {/* Bulk Toggle Checkbox */}
         {showBulkCheckbox && layerKey && disabledSubFilters && toggleSubFiltersBulk && (
           <button
@@ -159,13 +159,13 @@ function LegendSection({
               // If currently not all active, enable all (enable: true)
               toggleSubFiltersBulk(layerKey, items.map(i => i.name), !isAllActive)
             }}
-            className="flex items-center justify-center p-1 rounded hover:bg-white/10 text-gray-400 hover:text-white transition-colors cursor-pointer shrink-0"
+            className="flex items-center justify-center p-1 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-800 transition-colors cursor-pointer shrink-0"
             title={isAllActive ? "Nonaktifkan Semua" : "Aktifkan Semua"}
           >
             <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all duration-200 shrink-0
               ${isAllActive 
-                ? 'bg-white/10 border-white/40 text-white shadow-sm shadow-white/5' 
-                : 'bg-transparent border-gray-700 text-transparent'
+                ? 'bg-sky-500 border-sky-500 text-white shadow-sm' 
+                : 'bg-white border-gray-300 text-transparent'
               }
             `}>
               <svg xmlns="http://www.w3.org/2000/svg" className="w-2.5 h-2.5 stroke-current" viewBox="0 0 24 24" fill="none" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -178,11 +178,11 @@ function LegendSection({
         {/* Toggle Expand Button (chevron + title) */}
         <button
           onClick={() => setExpanded(!expanded)}
-          className="flex-1 flex items-center gap-1.5 py-1.5 text-left text-[11px] font-semibold text-white hover:text-white/80 transition-colors cursor-pointer"
+          className="flex-1 flex items-center gap-1.5 py-1.5 text-left text-[11px] font-semibold text-gray-800 hover:text-gray-600 transition-colors cursor-pointer"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className={`w-3 h-3 text-gray-500 transition-transform duration-200 shrink-0 ${
+            className={`w-3 h-3 text-gray-400 transition-transform duration-200 shrink-0 ${
               expanded ? 'rotate-90' : ''
             }`}
             viewBox="0 0 20 20"
@@ -195,14 +195,14 @@ function LegendSection({
             />
           </svg>
           <span className="truncate">{title}</span>
-          <span className="text-[9px] text-white font-semibold ml-1.5 shrink-0 bg-white/10 px-1.5 py-0.5 rounded-full select-none">
+          <span className="text-[9px] text-sky-700 font-semibold ml-1.5 shrink-0 bg-sky-50 px-1.5 py-0.5 rounded-full select-none">
             {items.length}
           </span>
         </button>
       </div>
 
       {expanded && (
-        <div className="ml-2 space-y-0.5 mt-0.5 border-l border-gray-800/50 pl-2">
+        <div className="ml-2 space-y-0.5 mt-0.5 border-l border-gray-200 pl-2">
           {items.map(({ name, color, label, count }) => {
             const isSubActive = layerKey && disabledSubFilters && toggleSubFilter
               ? !disabledSubFilters.has(`${layerKey}:${name}`)
@@ -214,8 +214,8 @@ function LegendSection({
                 {layerKey && disabledSubFilters && toggleSubFilter && (
                   <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all duration-200 shrink-0 mt-0.5
                     ${isSubActive 
-                      ? 'bg-white/10 border-white/40 text-white shadow-sm shadow-white/5' 
-                      : 'bg-transparent border-gray-700 text-transparent'
+                      ? 'bg-sky-500 border-sky-500 text-white shadow-sm' 
+                      : 'bg-white border-gray-300 text-transparent'
                     }
                   `}>
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-2.5 h-2.5 stroke-current" viewBox="0 0 24 24" fill="none" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -226,18 +226,18 @@ function LegendSection({
 
                 {/* Color block */}
                 <div
-                  className="w-3.5 h-3.5 rounded-sm shrink-0 border border-white/10 mt-0.5"
+                  className="w-3.5 h-3.5 rounded-sm shrink-0 border border-gray-200 mt-0.5"
                   style={{ backgroundColor: color }}
                 />
 
                 {/* Name */}
-                <span className={`text-[11px] font-semibold leading-snug flex-1 whitespace-normal break-words transition-colors duration-200 ${isSubActive ? 'text-white' : 'text-gray-500 line-through'}`}>
+                <span className={`text-[11px] font-semibold leading-snug flex-1 whitespace-normal break-words transition-colors duration-200 ${isSubActive ? 'text-gray-800' : 'text-gray-400 line-through'}`}>
                   {toTitleCase(label || name)}
                 </span>
 
                 {/* Count badge on the right */}
                 {count !== undefined && count > 0 && (
-                  <span className={`text-[10px] font-semibold shrink-0 ml-auto mr-1 select-none transition-colors duration-200 mt-0.5 ${isSubActive ? 'text-white' : 'text-gray-600 line-through'}`}>
+                  <span className={`text-[10px] font-semibold shrink-0 ml-auto mr-1 select-none transition-colors duration-200 mt-0.5 ${isSubActive ? 'text-gray-600' : 'text-gray-300 line-through'}`}>
                     ({count})
                   </span>
                 )}
@@ -249,7 +249,7 @@ function LegendSection({
                 <button
                   key={name}
                   onClick={() => toggleSubFilter(layerKey, name)}
-                  className="w-full flex items-center px-2 py-0.5 rounded hover:bg-white/5 transition-colors cursor-pointer text-left"
+                  className="w-full flex items-center px-2 py-0.5 rounded hover:bg-gray-50 transition-colors cursor-pointer text-left"
                 >
                   {itemContent}
                 </button>
@@ -259,7 +259,7 @@ function LegendSection({
             return (
               <div
                 key={name}
-                className="flex items-center px-2 py-1 rounded hover:bg-white/5 transition-colors"
+                className="flex items-center px-2 py-1 rounded hover:bg-gray-50 transition-colors"
               >
                 {itemContent}
               </div>
@@ -299,7 +299,7 @@ function LayerDetail({
       }
     })
     return (
-      <div className="ml-2 mt-2 pl-2 border-l border-gray-800/50">
+      <div className="ml-2 mt-2 pl-2 border-l border-gray-200">
         <LegendSection
           title="Kecamatan"
           items={items}
@@ -322,15 +322,15 @@ function LayerDetail({
     const [expanded, setExpanded] = useState(true)
 
     return (
-      <div className="ml-2 mt-2 space-y-1 pl-2 border-l border-gray-800/50">
+      <div className="ml-2 mt-2 space-y-1 pl-2 border-l border-gray-200">
         {/* Collapsible Header */}
         <button
           onClick={() => setExpanded(!expanded)}
-          className="w-full flex items-center gap-1.5 px-2 py-1.5 text-left text-[11px] font-semibold text-white hover:text-white/80 transition-colors cursor-pointer"
+          className="w-full flex items-center gap-1.5 px-2 py-1.5 text-left text-[11px] font-semibold text-gray-800 hover:text-gray-600 transition-colors cursor-pointer"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className={`w-3 h-3 text-gray-500 transition-transform duration-200 shrink-0 ${
+            className={`w-3 h-3 text-gray-400 transition-transform duration-200 shrink-0 ${
               expanded ? 'rotate-90' : ''
             }`}
             viewBox="0 0 20 20"
@@ -343,7 +343,7 @@ function LayerDetail({
             />
           </svg>
           <span className="uppercase tracking-wider">Kelurahan</span>
-          <span className="text-[9px] text-white font-semibold ml-1.5 shrink-0 bg-white/10 px-1.5 py-0.5 rounded-full select-none">
+          <span className="text-[9px] text-sky-700 font-semibold ml-1.5 shrink-0 bg-sky-50 px-1.5 py-0.5 rounded-full select-none">
             {totalCount}
           </span>
         </button>
@@ -382,13 +382,13 @@ function LayerDetail({
                     <button
                       key={name}
                       onClick={() => toggleSubFilter('kelurahan', name)}
-                      className="w-full flex items-start gap-2.5 px-2 py-1 rounded hover:bg-white/5 transition-colors cursor-pointer text-left"
+                      className="w-full flex items-start gap-2.5 px-2 py-1 rounded hover:bg-gray-50 transition-colors cursor-pointer text-left"
                     >
                       {/* Custom Checkbox on left */}
                       <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all duration-200 shrink-0 mt-0.5
                         ${isSubActive 
-                          ? 'bg-white/10 border-white/40 text-white shadow-sm shadow-white/5' 
-                          : 'bg-transparent border-gray-700 text-transparent'
+                          ? 'bg-sky-500 border-sky-500 text-white shadow-sm' 
+                          : 'bg-white border-gray-300 text-transparent'
                         }
                       `}>
                         <svg xmlns="http://www.w3.org/2000/svg" className="w-2.5 h-2.5 stroke-current" viewBox="0 0 24 24" fill="none" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -398,18 +398,18 @@ function LayerDetail({
 
                       {/* Color block */}
                       <div
-                        className="w-3.5 h-3.5 rounded-sm shrink-0 border border-white/10 mt-0.5"
+                        className="w-3.5 h-3.5 rounded-sm shrink-0 border border-gray-200 mt-0.5"
                         style={{ backgroundColor: color }}
                       />
 
                       {/* Name */}
-                      <span className={`text-[11px] font-semibold leading-snug flex-1 whitespace-normal break-words transition-colors duration-200 ${isSubActive ? 'text-white' : 'text-gray-500 line-through'}`}>
+                      <span className={`text-[11px] font-semibold leading-snug flex-1 whitespace-normal break-words transition-colors duration-200 ${isSubActive ? 'text-gray-800' : 'text-gray-400 line-through'}`}>
                         {toTitleCase(name)}
                       </span>
 
                       {/* Count badge on the right */}
                       {count > 0 && (
-                        <span className={`text-[10px] font-semibold shrink-0 ml-auto mr-1 select-none transition-colors duration-200 mt-0.5 ${isSubActive ? 'text-white' : 'text-gray-600 line-through'}`}>
+                        <span className={`text-[10px] font-semibold shrink-0 ml-auto mr-1 select-none transition-colors duration-200 mt-0.5 ${isSubActive ? 'text-gray-600' : 'text-gray-300 line-through'}`}>
                           ({count})
                         </span>
                       )}
@@ -429,15 +429,15 @@ function LayerDetail({
     const [expanded, setExpanded] = useState(true)
 
     return (
-      <div className="ml-2 mt-2 space-y-1 pl-2 border-l border-gray-800/50">
+      <div className="ml-2 mt-2 space-y-1 pl-2 border-l border-gray-200">
         {/* Collapsible Header */}
         <button
           onClick={() => setExpanded(!expanded)}
-          className="w-full flex items-center gap-1.5 px-2 py-1.5 text-left text-[11px] font-semibold text-white hover:text-white/80 transition-colors cursor-pointer"
+          className="w-full flex items-center gap-1.5 px-2 py-1.5 text-left text-[11px] font-semibold text-gray-800 hover:text-gray-600 transition-colors cursor-pointer"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className={`w-3.5 h-3.5 text-gray-500 transition-transform duration-200 shrink-0 ${
+            className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 shrink-0 ${
               expanded ? 'rotate-90' : ''
             }`}
             viewBox="0 0 20 20"
@@ -450,7 +450,7 @@ function LayerDetail({
             />
           </svg>
           <span className="uppercase tracking-wider">Zonasi RDTR</span>
-          <span className="text-[9px] text-white font-semibold ml-1.5 shrink-0 bg-white/10 px-1.5 py-0.5 rounded-full select-none">
+          <span className="text-[9px] text-sky-700 font-semibold ml-1.5 shrink-0 bg-sky-50 px-1.5 py-0.5 rounded-full select-none">
             {ZONE_GROUPS.length}
           </span>
         </button>
@@ -496,7 +496,7 @@ function LayerDetail({
       }
     })
     return (
-      <div className="ml-2 mt-2 pl-2 border-l border-gray-800/50">
+      <div className="ml-2 mt-2 pl-2 border-l border-gray-200">
         <LegendSection
           title="Sektor Investasi"
           items={items}
@@ -532,10 +532,10 @@ export default function LayerControl() {
               className={`
                 w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-left transition-all duration-200
                 ${isLoading
-                  ? 'bg-blue-500/10 text-blue-300 cursor-wait'
+                  ? 'bg-sky-50 text-sky-600 cursor-wait'
                   : isActive
-                    ? 'bg-white/10 text-white shadow-lg shadow-black/10 cursor-pointer'
-                    : 'bg-transparent text-gray-500 hover:bg-white/5 hover:text-gray-300 cursor-pointer'
+                    ? 'bg-sky-50 text-gray-900 shadow-sm border border-sky-200 cursor-pointer'
+                    : 'bg-transparent text-gray-500 hover:bg-gray-50 hover:text-gray-700 cursor-pointer'
                 }
               `}
             >
@@ -543,7 +543,7 @@ export default function LayerControl() {
               <div
                 className={`
                   relative w-9 h-5 rounded-full transition-colors duration-200 shrink-0
-                  ${isLoading ? 'bg-blue-500/50' : isActive ? 'bg-blue-500' : 'bg-gray-700'}
+                  ${isLoading ? 'bg-sky-300' : isActive ? 'bg-sky-500' : 'bg-gray-300'}
                 `}
               >
                 <div
@@ -568,7 +568,7 @@ export default function LayerControl() {
               <span className="text-sm font-medium truncate">
                 {config.label}
                 {isLoading && (
-                  <span className="text-[10px] text-blue-400/70 ml-1.5 font-normal">
+                  <span className="text-[10px] text-sky-500 ml-1.5 font-normal">
                     Memuat...
                   </span>
                 )}
