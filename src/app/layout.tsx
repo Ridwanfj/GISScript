@@ -8,11 +8,11 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "WebGIS Kota Tegal",
+  title: "FIT Zone — Kota Tegal",
   description:
-    "Sistem Informasi Geografis Kota Tegal — Peta interaktif batas wilayah, pola ruang RDTR, dan proyek investasi.",
+    "Forum Investasi Tegal Zone — Peta interaktif batas wilayah, pola ruang RDTR, dan proyek investasi Kota Tegal.",
   keywords: [
-    "WebGIS",
+    "FIT Zone",
     "Kota Tegal",
     "Peta",
     "GIS",
@@ -21,6 +21,9 @@ export const metadata: Metadata = {
     "Investasi",
   ],
   authors: [{ name: "Pemerintah Kota Tegal" }],
+  icons: {
+    icon: "/logo.svg",
+  },
 };
 
 export default function RootLayout({
